@@ -29,6 +29,12 @@ html[data-st-beautify="on"] #container:has(.invoice-job-view[data-st-invoice-ui]
     padding: 24px !important;
     background: #f8fafc;
   }
+/* The container above is centered with a max width, so ServiceTitan's gray page
+   background showed as bars on either side of the invoice. Paint the page to match
+   while the Beautify invoice is mounted (the attribute is removed on unmount). */
+html[data-st-beautify="on"] body:has(.invoice-job-view[data-st-invoice-ui]) {
+    background: #f8fafc !important;
+  }
 html[data-st-beautify="on"] .invoice-job-view[data-st-invoice-ui] :is(h1, h2, h3) {
     color: var(--sti-ink) !important;
     text-shadow: none !important;
