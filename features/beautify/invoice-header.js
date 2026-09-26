@@ -20,12 +20,15 @@
 
   // Label, value and (optional) link of a native header field, read without
   // touching its bound nodes.
+  // Knockout hides the alternative value with display:none (e.g. Batch shows
+  // "Unbatched" and hides a "#0 - null" link), so skip hidden children.
+  const shown = n => n.nodeType !== 1 || !(n.hidden || n.style.display === 'none');
   function readField(li) {
     const label = clean(li.querySelector(':scope > label')?.textContent || '');
     const value = clean([...li.childNodes]
-      .filter(n => !(n.nodeType === 1 && (n.matches('label') || n.matches('i:first-child'))))
+      .filter(n => shown(n) && !(n.nodeType === 1 && (n.matches('label') || n.matches('i:first-child'))))
       .map(n => n.textContent).join(' '));
-    const link = li.querySelector('a');
+    const link = [...li.querySelectorAll('a')].find(shown) || null;
     let href = '';
     if (link?.hasAttribute('href')) {
       try {
@@ -94,7 +97,7 @@
 
     function nativeLink(key) {
       for (const li of meta?.querySelectorAll(':scope > li') || []) {
-        if (readField(li).key === key) return li.querySelector('a');
+        if (readField(li).key === key) return readField(li).link;
       }
       return null;
     }
