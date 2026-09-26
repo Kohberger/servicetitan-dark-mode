@@ -363,6 +363,26 @@ html[data-st-dark="on"] [data-mfe-name="servicetitan-global-search-bar"] [data-a
 }
 
 
+/* ===== Job page Tasks panel — card counter-invert exclusion ================
+   The job page's Tasks panel is a [data-anv="card"], so the general card rule
+   above counter-inverts it back to a light island. It has no status colors to
+   preserve, so cancel the counter-invert and let the html filter darken it like
+   the rest of the page. Match the stable component class prefix
+   (job-tasks-card__*), never the generated hash suffix. fixJobCards() skips it
+   too, so no inline !important filter overrides this.
+   Its children lose the card counter-invert as their parent, so chips and media
+   get their normal page-level counter-invert back (same as Global Search).
+============================================================================= */
+html[data-st-dark="on"] [data-anv="card"][class*="job-tasks-card__"] {
+  filter: none !important;
+}
+html[data-st-dark="on"] [data-anv="card"][class*="job-tasks-card__"] [class*="chip"],
+html[data-st-dark="on"] [data-anv="card"][class*="job-tasks-card__"] [style*="--int-"],
+html[data-st-dark="on"] [data-anv="card"][class*="job-tasks-card__"] [data-anvil-component][style*="background-color"],
+html[data-st-dark="on"] [data-anv="card"][class*="job-tasks-card__"] :is(img, video, picture, canvas, svg image, [style*="background-image"]) {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
+
 /* ===== Semantic UI dropdown menus (tag picker, form selects, etc.) ===========
    .ui.dropdown .menu items get black text → white via the global html filter,
    which is correct for readability. But emoji characters are color bitmaps and
@@ -656,6 +676,18 @@ html[data-st-dark="on"] :is([data-anv="card"], [popover], :popover-open, [data-p
     :host-context(html[data-st-dark="on"]) [data-anv="card"] [style*="--int-"],
     :host-context(html[data-st-dark="on"]) [data-anv="card"] [data-anvil-component][style*="background-color"] {
       filter: none !important;
+    }
+    /* Job page Tasks panel: excluded from the card counter-invert so it goes
+       dark with the page; its chips and media get the page-level treatment.
+       See the matching light-DOM block for details. */
+    :host-context(html[data-st-dark="on"]) [data-anv="card"][class*="job-tasks-card__"] {
+      filter: none !important;
+    }
+    :host-context(html[data-st-dark="on"]) [data-anv="card"][class*="job-tasks-card__"] [class*="chip"],
+    :host-context(html[data-st-dark="on"]) [data-anv="card"][class*="job-tasks-card__"] [style*="--int-"],
+    :host-context(html[data-st-dark="on"]) [data-anv="card"][class*="job-tasks-card__"] [data-anvil-component][style*="background-color"],
+    :host-context(html[data-st-dark="on"]) [data-anv="card"][class*="job-tasks-card__"] :is(img, video, picture, canvas, svg image, [style*="background-image"]) {
+      filter: invert(1) hue-rotate(180deg) !important;
     }
 
     /* ===== Week-view dispatch board: structural grid cells ===================
@@ -991,11 +1023,14 @@ html[data-st-dark="on"] :is([data-anv="card"], [popover], :popover-open, [data-p
   // applies (a gentle softening), but the disorienting full color-scramble is
   // undone. Images inside cards get filter:none to avoid a triple-invert.
   const GS_HOST_SEL = 'servicetitan-global-search-bar,[data-mfe-name="servicetitan-global-search-bar"]';
+  // Job page Tasks panel: stays single-inverted (dark). Stable class prefix, not the hash.
+  const TASKS_PANEL_SEL = '[data-anv="card"][class*="job-tasks-card__"]';
   function fixJobCards(ctx=document) {
     if (isEHub) return;   // Enterprise Hub tiles use data-anv="card" but should NOT be counter-inverted
     try {
       const applyCard = (el) => {
         if (el.closest?.(GS_HOST_SEL)) return;   // GS cards: single-inversion only
+        if (el.matches?.(TASKS_PANEL_SEL)) return; // Tasks panel: CSS sets filter:none
         el.style.setProperty('filter', 'invert(1) hue-rotate(180deg)', 'important');
         el.querySelectorAll('img, video, picture, canvas').forEach(media => {
           media.style.setProperty('filter', 'none', 'important');

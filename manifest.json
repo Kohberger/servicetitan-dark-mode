@@ -46,6 +46,7 @@
         "*://*.servicetitan.com/*"
       ],
       "js": [
+        "toggle-core.js",
         "content.js"
       ],
       "run_at": "document_start",

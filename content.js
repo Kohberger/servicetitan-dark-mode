@@ -2,9 +2,10 @@
 (function () {
   const isST = /servicetitan/i.test(location.hostname);
   if (!isST) return;
+  const Core = globalThis.STToggleCore; // toggle-core.js, loaded first by manifest.json
 
   const HOST_KEY = `st_dark_enabled::${location.host}`;
-  const POS_KEY    = `st_dark_pos::${location.host}`;    // {x, y} pixel coords
+  const POS_KEY    = `st_dark_pos::${location.host}`;    // v2 edge offsets (legacy: {x, y} pixels)
   const CORNER_KEY = `st_dark_corner::${location.host}`; // legacy — migration only
   const PROMO_KEY = "st_dark_promo_dismissed"; // boolean
   const margin = 14;
@@ -114,46 +115,42 @@
       moon.classList.toggle('hidden', !isEnabled);
     };
 
+    // ── Position ──────────────────────────────────────────────────────────
+    // Stored as offsets from the nearest viewport edges (see toggle-core.js) so
+    // the toggle stays anchored to its corner as the window resizes.
     const SIZE = 44; // toggle dimensions (px) — matches host width/height
-    function applyPos(x, y) {
-      const maxX = window.innerWidth  - SIZE - margin;
-      const maxY = window.innerHeight - SIZE - margin;
-      x = Math.max(margin, Math.min(x, maxX));
-      y = Math.max(margin, Math.min(y, maxY));
-      host.style.left = x + "px"; host.style.top = y + "px";
+    const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
+    let position = Core.defaultPosition();
+    let userPositioned = false; // set once the user drags; stale storage reads must not undo it
+
+    function placeAt(left, top) {
+      host.style.left = left + "px"; host.style.top = top + "px";
       host.style.right = "auto"; host.style.bottom = "auto";
     }
-    function cornerToPos(c) {
-      const w = window.innerWidth, h = window.innerHeight;
-      if (c === "lb") return { x: margin,         y: h - SIZE - margin };
-      if (c === "rt") return { x: w - SIZE - margin, y: margin           };
-      if (c === "lt") return { x: margin,           y: margin            };
-      return               { x: w - SIZE - margin, y: h - SIZE - margin }; // rb
+    function render() {
+      const { left, top } = Core.positionToPixels(position, SIZE, viewport(), margin);
+      placeAt(left, top);
     }
+    render(); // default bottom-right until storage answers
 
     try {
       chrome.storage.sync.get([POS_KEY, CORNER_KEY], (res) => {
-        if (res[POS_KEY] && typeof res[POS_KEY].x === "number") {
-          applyPos(res[POS_KEY].x, res[POS_KEY].y);        // saved free position
-        } else if (res[CORNER_KEY]) {
-          const p = cornerToPos(res[CORNER_KEY]);            // migrate old corner
-          applyPos(p.x, p.y);
-        } else {
-          const p = cornerToPos("rb");                       // default: bottom-right
-          applyPos(p.x, p.y);
-        }
+        if (userPositioned) return;
+        const { position: stored, migrated } =
+          Core.resolveStoredPosition(res?.[POS_KEY], res?.[CORNER_KEY], SIZE, viewport());
+        position = stored;
+        render();
+        if (migrated) { try { chrome.storage.sync.set({ [POS_KEY]: position }); } catch {} }
       });
-    } catch { applyPos(cornerToPos("rb").x, cornerToPos("rb").y); }
+    } catch {}
 
-    let dragging = false, moved = false;
-    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
-    const THRESH = 5;
-
-    const cleanup = (aborters=[]) => {
-      aborters.forEach(a => { try { a.abort(); } catch{} });
-      btn.style.cursor = "pointer";
-      dragging = false; moved = false;
-    };
+    // Re-place (never re-save) on resize, at most once per frame. Clamping
+    // happens in render(), so the preferred offsets survive a shrink/grow.
+    let resizeFrame = 0;
+    window.addEventListener('resize', () => {
+      if (resizeFrame) return;
+      resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; render(); });
+    }, { passive: true });
 
     const toggle = () => post({ type: "ST_DARK_TOGGLE" });
 
@@ -209,60 +206,63 @@
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isMenuOpen()) closeMenu(); }, true);
     window.addEventListener('resize', closeMenu, { passive: true });
 
+    // ── Tap to toggle, drag to move ───────────────────────────────────────
+    // One gesture at a time. Only a pointerup without a drag toggles; cancel,
+    // lost capture and window blur end the gesture without toggling.
+    let gesture = null;
+    let suppressClick = false;
+    btn.addEventListener("click", (e) => {
+      if (suppressClick) { suppressClick = false; e.preventDefault(); e.stopImmediatePropagation(); }
+    }, { capture: true });
+
     btn.addEventListener("pointerdown", (ev) => {
       if (ev.button !== 0 && ev.pointerType === "mouse") return;
+      if (gesture) return;
       ev.preventDefault();
       const menuWasOpen = isMenuOpen();
       closeMenu();
-      dragging = false; moved = false;
-      startX = ev.clientX; startY = ev.clientY;
+
+      const pointerId = ev.pointerId;
       const rect = host.getBoundingClientRect();
-      startLeft = rect.left; startTop = rect.top;
+      const startLeft = rect.left, startTop = rect.top;
+      const ac = new AbortController();
+      const opts = { signal: ac.signal };
+
+      const current = gesture = Core.createGesture({
+        x: ev.clientX,
+        y: ev.clientY,
+        onDragMove: (dx, dy) => {
+          const vp = viewport();
+          placeAt(Core.clampAxis(startLeft + dx, SIZE, vp.width, margin),
+                  Core.clampAxis(startTop + dy, SIZE, vp.height, margin));
+        },
+        onDragEnd: () => {
+          suppressClick = true;
+          userPositioned = true;
+          const r = host.getBoundingClientRect();
+          position = Core.positionFromRect(r.left, r.top, SIZE, viewport());
+          render();
+          try { chrome.storage.sync.set({ [POS_KEY]: position }); } catch {}
+        },
+        onTap: () => { if (!menuWasOpen) toggle(); },
+      });
+
+      const settle = () => {
+        ac.abort();
+        if (gesture === current) gesture = null;
+        btn.style.cursor = "pointer";
+        try { btn.releasePointerCapture(pointerId); } catch {}
+      };
+      const mine = (e) => e.pointerId === pointerId;
+
       btn.style.cursor = "grabbing";
-      try { btn.setPointerCapture(ev.pointerId); } catch {}
+      try { btn.setPointerCapture(pointerId); } catch {}
 
-      const acMove = new AbortController();
-      const acUp = new AbortController();
-      const acCancel = new AbortController();
-      const acLost = new AbortController();
-      const acBlur = new AbortController();
-
-      const onMove = (e) => {
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        if (!dragging && (Math.abs(dx) > THRESH || Math.abs(dy) > THRESH)) dragging = true;
-        if (dragging) {
-          moved = true;
-          let nx = startLeft + dx;
-          let ny = startTop + dy;
-          const maxX = window.innerWidth - host.offsetWidth - margin;
-          const maxY = window.innerHeight - host.offsetHeight - margin;
-          nx = Math.max(margin, Math.min(nx, maxX));
-          ny = Math.max(margin, Math.min(ny, maxY));
-          host.style.left = nx + "px";
-          host.style.top = ny + "px";
-          host.style.right = "auto";
-          host.style.bottom = "auto";
-        }
-      };
-      const finish = (e) => {
-        try { btn.releasePointerCapture(ev.pointerId); } catch {}
-        if (dragging) {
-          const rect2 = host.getBoundingClientRect();
-          try { chrome.storage.sync.set({ [POS_KEY]: { x: rect2.left, y: rect2.top } }); } catch {}
-        }
-        if (!moved && !menuWasOpen) { toggle(); }
-        cleanup([acMove, acUp, acCancel, acLost, acBlur]);
-      };
-
-      const onClickOnce = (e) => { if (moved) { e.preventDefault(); e.stopImmediatePropagation(); } };
-      btn.addEventListener("click", onClickOnce, { once: true, capture: true });
-
-      window.addEventListener("pointermove", onMove, { signal: acMove.signal });
-      window.addEventListener("pointerup", finish, { signal: acUp.signal });
-      window.addEventListener("pointercancel", finish, { signal: acCancel.signal });
-      btn.addEventListener("lostpointercapture", finish, { signal: acLost.signal });
-      window.addEventListener("blur", finish, { signal: acBlur.signal });
+      window.addEventListener("pointermove", (e) => { if (mine(e)) current.move(e.clientX, e.clientY); }, opts);
+      window.addEventListener("pointerup", (e) => { if (mine(e)) { current.end(e.clientX, e.clientY); settle(); } }, opts);
+      window.addEventListener("pointercancel", (e) => { if (mine(e)) { current.cancel(); settle(); } }, opts);
+      btn.addEventListener("lostpointercapture", (e) => { if (mine(e)) { current.cancel(); settle(); } }, opts);
+      window.addEventListener("blur", () => { current.cancel(); settle(); }, opts);
     }, { passive: false });
 
     window.addEventListener('message', (e) => {
