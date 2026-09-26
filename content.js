@@ -10,12 +10,21 @@
   const PROMO_KEY = "st_dark_promo_dismissed"; // boolean
   const margin = 14;
 
+  // One-time "what's new" notice for Beautify, which ships off by default.
+  const NOTICE = {
+    seenKey: "st_notice_beautify_seen",   // sync: true once the user answers it
+    countKey: "st_notice_beautify_shown", // local: times shown on this device
+    feature: "st_feature_beautify",
+    maxShows: 3,                          // stop offering it if it's ignored
+  };
+
   // Feature switches shown in the toggle's right-click menu. Each is a boolean
   // in chrome.storage.sync (default off); the feature's own script reacts to it.
   const FEATURES = [
     {
       key: "st_feature_beautify",
       label: "Beautify",
+      pages: "Invoice pages and the job History tab",
       icon: `<path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" fill="currentColor"/>`,
     },
   ];
@@ -79,6 +88,29 @@
                  font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 6px 8px;
                  border-radius: 6px; border: 1px solid rgba(255,255,255,.08); }
         .label .state { opacity: .6; margin-left: 4px; }
+        .label .pages { display: block; margin-top: 3px; font-size: 11px; opacity: .65; }
+
+        /* One-time "what's new" notice. Opens toward the middle of the screen, like the menu. */
+        .notice { position: absolute; width: 272px; box-sizing: border-box; padding: 14px 16px 12px;
+                  bottom: 54px; background: rgba(28,28,28,.96); color: #fff;
+                  border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
+                  box-shadow: 0 10px 30px rgba(0,0,0,.45); pointer-events: auto;
+                  font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+        .notice.down { bottom: auto; top: 54px; }
+        .notice.left { right: 0; }
+        .notice.right { left: 0; }
+        .notice[hidden] { display: none; }
+        .notice-title { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: 14px; font-weight: 650; }
+        .notice-title svg { width: 16px; height: 16px; flex: none; color: #f47b20; }
+        .notice-body { margin: 0 0 12px; opacity: .9; }
+        .notice-actions { display: flex; gap: 8px; margin: 0 0 10px; }
+        .notice-actions button { padding: 8px 12px; border-radius: 8px; cursor: pointer;
+                                 font: 600 13px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+                                 border: 1px solid rgba(255,255,255,.18); background: transparent; color: #fff; }
+        .notice-actions .notice-on { background: #f47b20; border-color: transparent; }
+        .notice-actions button:focus-visible { outline: 2px solid #2f8cff; outline-offset: 2px; }
+        .notice-hint { margin: 0; font-size: 12px; opacity: .6; }
+        .notice-open .tip { display: none; }
       </style>
       <div class="shell" id="shell">
       <div class="wrap" id="btn" title="Toggle dark (Alt+D)">
@@ -99,8 +131,17 @@
                 <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="#fff"/></svg>
               </span>
             </button>
-            <span class="label">${f.label}<span class="state">Off</span></span>
+            <span class="label">${f.label}<span class="state">Off</span><span class="pages">${f.pages}</span></span>
           </div>`).join("")}
+      </div>
+      <div class="notice" id="notice" role="dialog" aria-labelledby="notice-title" hidden>
+        <p class="notice-title" id="notice-title"><svg viewBox="0 0 24 24" aria-hidden="true">${FEATURES[0].icon}</svg>New: Beautify</p>
+        <p class="notice-body">A cleaner layout for invoice pages and the job History tab.</p>
+        <div class="notice-actions">
+          <button type="button" class="notice-on" id="notice-on">Turn it on</button>
+          <button type="button" id="notice-later">Not now</button>
+        </div>
+        <p class="notice-hint">Right-click this button anytime to switch it on or off.</p>
       </div>
       </div>
     `;
@@ -165,6 +206,7 @@
     const isMenuOpen = () => shell.classList.contains('menu-open');
     const closeMenu = () => shell.classList.remove('menu-open');
     const openMenu = () => {
+      hideNotice();
       // Fan out toward the middle of the screen so bubbles never go off-edge.
       const r = host.getBoundingClientRect();
       menu.classList.toggle('down', r.top < window.innerHeight / 2);
@@ -273,13 +315,40 @@
       }
     }, { passive: true });
 
-    return { setIcon, host };
+    // ── One-time "what's new" notice ──────────────────────────────────────
+    const notice = $('#notice');
+    let noticeDone = null;
+    function hideNotice() {
+      if (notice.hidden) return;
+      notice.hidden = true;
+      shell.classList.remove('notice-open');
+      const done = noticeDone; noticeDone = null;
+      done?.();
+    }
+    function showNotice(onDone) {
+      const r = host.getBoundingClientRect();
+      notice.classList.toggle('down', r.top < window.innerHeight / 2);
+      const toLeft = r.left > window.innerWidth / 2;
+      notice.classList.toggle('left', toLeft);
+      notice.classList.toggle('right', !toLeft);
+      noticeDone = onDone;
+      notice.hidden = false;
+      shell.classList.add('notice-open');
+    }
+    $('#notice-on').addEventListener('click', () => {
+      try { chrome.storage.sync.set({ [NOTICE.feature]: true }); } catch {}
+      hideNotice();
+    });
+    $('#notice-later').addEventListener('click', hideNotice);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideNotice(); }, true);
+
+    return { setIcon, host, showNotice };
   }
 
-  function maybeShowPromoModal() {
+  function maybeShowPromoModal(onDone) {
     const PROMO_KEY = "st_dark_promo_dismissed";
     chrome.storage.local.get(PROMO_KEY, (res) => {
-      if (res && res[PROMO_KEY]) return;
+      if (res && res[PROMO_KEY]) { onDone?.(); return; }
       const overlay = document.createElement("div");
       overlay.id = "st-dark-promo-overlay";
       overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2147483646`;
@@ -325,6 +394,7 @@
       btn.addEventListener("click", () => {
         if (cb.checked) chrome.storage.local.set({ [PROMO_KEY]: true });
         overlay.remove();
+        onDone?.();
       });
       overlay.addEventListener("click", (e) => { if (e.target === overlay) btn.click(); });
 
@@ -335,6 +405,27 @@
     });
   }
 
+  // Shown in the top frame only, never on print pages, never on top of the promo,
+  // and never to someone who already turned Beautify on.
+  function maybeShowBeautifyNotice() {
+    if (window.top !== window || !overlay?.showNotice) return;
+    if (/\/app\/api\/.*\/print\/|\/(?:Invoice|Estimate)\/Print\/|[?&]print=true\b/i.test(location.pathname + location.search + location.hash)) return;
+    try {
+      chrome.storage.sync.get([NOTICE.seenKey, NOTICE.feature], (sync) => {
+        if (sync?.[NOTICE.seenKey] || sync?.[NOTICE.feature] === true) return;
+        chrome.storage.local.get(NOTICE.countKey, (local) => {
+          const shown = Number(local?.[NOTICE.countKey]) || 0;
+          if (shown >= NOTICE.maxShows) return;
+          // Let ServiceTitan finish loading before it appears.
+          setTimeout(() => {
+            try { chrome.storage.local.set({ [NOTICE.countKey]: shown + 1 }); } catch {}
+            overlay.showNotice(() => { try { chrome.storage.sync.set({ [NOTICE.seenKey]: true }); } catch {} });
+          }, 1500);
+        });
+      });
+    } catch {}
+  }
+
   let overlay;
   chrome.storage.sync.get(HOST_KEY, (res) => {
     const isEnabled = res[HOST_KEY] !== false;
@@ -342,7 +433,7 @@
     const post = (payload) => window.postMessage(Object.assign({ __st: true }, payload), "*");
     post({ type: "ST_DARK_SET", enabled: isEnabled });
     overlay.setIcon(isEnabled);
-    maybeShowPromoModal(); // first time opening ServiceTitan after install
+    maybeShowPromoModal(maybeShowBeautifyNotice); // promo first, then the one-time Beautify notice
   });
 
   chrome.runtime.onMessage.addListener((msg) => {

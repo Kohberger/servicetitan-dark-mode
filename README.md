@@ -8,7 +8,7 @@ It's a Chrome extension (Manifest V3) that runs only on `*.servicetitan.com`.
 
 - Click the floating toggle button on any ServiceTitan page to turn dark mode on or off. Drag it wherever you like.
 - Or press **Alt+D**.
-- Right-click the toggle for extra options. Right now there's one: **Beautify** (off by default).
+- Right-click the toggle for extra options. Right now there's one: **Beautify** (off by default), a cleaner layout for invoice pages and the job History tab. The first time someone opens ServiceTitan after updating, a one-time notice by the toggle offers to turn it on.
 - Dark mode is saved per ServiceTitan host. Beautify is a global setting, off by default.
 
 ## Running it from this repo
