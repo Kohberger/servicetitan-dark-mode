@@ -383,6 +383,30 @@ html[data-st-dark="on"] [data-anv="card"][class*="job-tasks-card__"] :is(img, vi
   filter: invert(1) hue-rotate(180deg) !important;
 }
 
+/* ===== Job page: one dark background, dark appointment cards ===============
+   1) Background. The job page's header strip is white (renders near-black), but
+      below it the global canvas (#DAD7D6) showed through as warm gray, so the
+      page looked split in two. On the job page, use white as the base so the
+      header, the page and the cards read as one dark surface; cards keep their
+      borders for separation. .qa-header-job-name is ServiceTitan's QA hook on
+      the job title, so this only matches the job page.
+   2) Appointment cards. An appointment card's own background-color is its
+      status color (the stripe down its left edge), so the chip rule above
+      ([data-anvil-component][style*="background-color"]) counter-inverts the
+      whole card and leaves a light island. Keep that counter-invert on the
+      outer card so the stripe keeps its true color, and invert the content
+      section again so the body goes dark like every other card. Chips inside
+      still get their own counter-invert, so they keep their true colors.
+============================================================================= */
+html[data-st-dark="on"]:has(.qa-header-job-name),
+html[data-st-dark="on"]:has(.qa-header-job-name) body,
+html[data-st-dark="on"]:has(.qa-header-job-name) :is(#app, #root, main, [data-anv="app-root"], .app-layout, .app-layout-main, .app-layout-content) {
+  background-color: #FFFFFF !important;
+}
+html[data-st-dark="on"] .qa-appointment-card > .CardSection {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
+
 /* ===== Semantic UI dropdown menus (tag picker, form selects, etc.) ===========
    .ui.dropdown .menu items get black text → white via the global html filter,
    which is correct for readability. But emoji characters are color bitmaps and
