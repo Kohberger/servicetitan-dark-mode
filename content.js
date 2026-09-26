@@ -9,6 +9,16 @@
   const PROMO_KEY = "st_dark_promo_dismissed"; // boolean
   const margin = 14;
 
+  // Feature switches shown in the toggle's right-click menu. Each is a boolean
+  // in chrome.storage.sync (default off); the feature's own script reacts to it.
+  const FEATURES = [
+    {
+      key: "st_feature_deuglify",
+      label: "De-uglify",
+      icon: `<path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" fill="currentColor"/>`,
+    },
+  ];
+
   const post = (payload) => window.postMessage(Object.assign({ __st: true }, payload), "*");
 
   function addOverlay () {
@@ -35,7 +45,41 @@
                border-radius: 6px; border: 1px solid rgba(255,255,255,.08); white-space: nowrap;
                opacity: 0; transform: translateX(6px); transition: opacity .15s ease, transform .15s ease; pointer-events: none; }
         .wrap:hover + .tip { opacity: 1; transform: translateX(0); }
+        .menu-open .tip { display: none; }
+
+        /* Right-click feature bubbles. Opens toward the middle of the screen. */
+        .menu { position: absolute; display: flex; flex-direction: column-reverse; gap: 10px;
+                pointer-events: none; bottom: 54px; }
+        .menu.down { flex-direction: column; bottom: auto; top: 54px; }
+        .menu.right { left: 4px; }
+        .menu.left { right: 4px; }
+        .item { display: flex; align-items: center; gap: 8px; pointer-events: none;
+                opacity: 0; transform: translateY(10px) scale(.6);
+                transition: opacity .16s ease, transform .2s cubic-bezier(.3,1.5,.6,1); }
+        .menu.down .item { transform: translateY(-10px) scale(.6); }
+        .menu.left .item { flex-direction: row-reverse; }
+        .menu-open .item { opacity: 1; transform: none; pointer-events: auto; }
+        .bubble { position: relative; width: 36px; height: 36px; flex: none; display: grid; place-items: center;
+                  border-radius: 999px; padding: 0; cursor: pointer; color: rgba(255,255,255,.55);
+                  background: rgba(28,28,28,.85); backdrop-filter: blur(8px);
+                  border: 1px solid rgba(255,255,255,.08); box-shadow: 0 4px 12px rgba(0,0,0,.35);
+                  transition: background .15s ease, color .15s ease, box-shadow .15s ease, transform .1s ease; }
+        .bubble:hover { color: #fff; transform: translateY(-1px); }
+        .bubble:active { transform: scale(.94); }
+        .bubble:focus-visible { outline: 2px solid #2f8cff; outline-offset: 2px; }
+        .bubble svg { width: 20px; height: 20px; display: block; }
+        .bubble[aria-checked="true"] { color: #fff; background: #f47b20; border-color: rgba(255,255,255,.25);
+                                        box-shadow: 0 0 0 3px rgba(244,123,32,.3), 0 4px 12px rgba(0,0,0,.35); }
+        .check { position: absolute; right: -3px; bottom: -3px; width: 15px; height: 15px; border-radius: 999px;
+                 background: #1faa59; border: 2px solid rgba(28,28,28,.95); display: none; place-items: center; }
+        .check svg { width: 9px; height: 9px; }
+        .bubble[aria-checked="true"] .check { display: grid; }
+        .label { background: rgba(28,28,28,.9); color: #fff; white-space: nowrap; pointer-events: none;
+                 font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 6px 8px;
+                 border-radius: 6px; border: 1px solid rgba(255,255,255,.08); }
+        .label .state { opacity: .6; margin-left: 4px; }
       </style>
+      <div class="shell" id="shell">
       <div class="wrap" id="btn" title="Toggle dark (Alt+D)">
         <svg id="sun" class="icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.79 1.8-1.79zM1 13h3v-2H1v2zm10-9h2V1h-2v3zm7.07 1.05l1.79-1.79-1.79-1.79-1.79 1.79 1.79 1.79zM20 13h3v-2h-3v2zm-8 8h2v-3h-2v3zm-7.07-2.05l1.79 1.79 1.8-1.8-1.79-1.79-1.8 1.8zM17.24 19.16l1.79 1.79 1.8-1.8-1.79-1.79-1.8 1.8zM12 6a6 6 0 100 12A6 6 0 0012 6z" fill="white"/>
@@ -45,11 +89,25 @@
         </svg>
       </div>
       <div class="tip">ServiceTitan Dark</div>
+      <div class="menu" id="menu" role="menu" aria-label="ServiceTitan Dark options">
+        ${FEATURES.map((f) => `
+          <div class="item">
+            <button class="bubble" role="menuitemcheckbox" aria-checked="false" data-key="${f.key}" title="${f.label}">
+              <svg viewBox="0 0 24 24" aria-hidden="true">${f.icon}</svg>
+              <span class="check" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="#fff"/></svg>
+              </span>
+            </button>
+            <span class="label">${f.label}<span class="state">Off</span></span>
+          </div>`).join("")}
+      </div>
+      </div>
     `;
     document.documentElement.appendChild(host);
 
     const $ = (sel) => root.querySelector(sel);
     const btn = $('#btn'); const sun = $('#sun'); const moon = $('#moon');
+    const shell = $('#shell'); const menu = $('#menu');
 
     const setIcon = (isEnabled) => {
       sun.classList.toggle('hidden', !!isEnabled);
@@ -99,9 +157,63 @@
 
     const toggle = () => post({ type: "ST_DARK_TOGGLE" });
 
+    // ── Right-click feature menu ──────────────────────────────────────────
+    const bubbles = [...root.querySelectorAll('.bubble')];
+    const setBubble = (key, on) => {
+      const b = bubbles.find(el => el.dataset.key === key); if (!b) return;
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      const state = b.parentElement.querySelector('.state');
+      if (state) state.textContent = on ? 'On' : 'Off';
+    };
+    const isMenuOpen = () => shell.classList.contains('menu-open');
+    const closeMenu = () => shell.classList.remove('menu-open');
+    const openMenu = () => {
+      // Fan out toward the middle of the screen so bubbles never go off-edge.
+      const r = host.getBoundingClientRect();
+      menu.classList.toggle('down', r.top < window.innerHeight / 2);
+      const toLeft = r.left > window.innerWidth / 2;
+      menu.classList.toggle('left', toLeft);
+      menu.classList.toggle('right', !toLeft);
+      shell.classList.add('menu-open');
+    };
+
+    try {
+      chrome.storage.sync.get(FEATURES.map(f => f.key), (res) => {
+        FEATURES.forEach(f => setBubble(f.key, res?.[f.key] === true));
+      });
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'sync') return;
+        FEATURES.forEach(f => { if (f.key in changes) setBubble(f.key, changes[f.key].newValue === true); });
+      });
+    } catch {}
+
+    bubbles.forEach(b => {
+      b.addEventListener('pointerdown', (e) => e.stopPropagation());
+      b.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const key = b.dataset.key;
+        const next = b.getAttribute('aria-checked') !== 'true';
+        setBubble(key, next);
+        try { chrome.storage.sync.set({ [key]: next }); } catch {}
+      });
+    });
+
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      isMenuOpen() ? closeMenu() : openMenu();
+    });
+    // Clicks inside our closed shadow root retarget to `host`, so anything else is "outside".
+    window.addEventListener('pointerdown', (e) => {
+      if (isMenuOpen() && !e.composedPath().includes(host)) closeMenu();
+    }, true);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isMenuOpen()) closeMenu(); }, true);
+    window.addEventListener('resize', closeMenu, { passive: true });
+
     btn.addEventListener("pointerdown", (ev) => {
       if (ev.button !== 0 && ev.pointerType === "mouse") return;
       ev.preventDefault();
+      const menuWasOpen = isMenuOpen();
+      closeMenu();
       dragging = false; moved = false;
       startX = ev.clientX; startY = ev.clientY;
       const rect = host.getBoundingClientRect();
@@ -139,7 +251,7 @@
           const rect2 = host.getBoundingClientRect();
           try { chrome.storage.sync.set({ [POS_KEY]: { x: rect2.left, y: rect2.top } }); } catch {}
         }
-        if (!moved) { toggle(); }
+        if (!moved && !menuWasOpen) { toggle(); }
         cleanup([acMove, acUp, acCancel, acLost, acBlur]);
       };
 

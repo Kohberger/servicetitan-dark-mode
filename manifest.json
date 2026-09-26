@@ -53,6 +53,22 @@
       "exclude_matches": [
         "*://help.servicetitan.com/*"
       ]
+    },
+    {
+      "matches": [
+        "*://*.servicetitan.com/*"
+      ],
+      "js": [
+        "features/deuglify/deuglify.js"
+      ],
+      "css": [
+        "features/deuglify/deuglify.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "exclude_matches": [
+        "*://help.servicetitan.com/*"
+      ]
     }
   ],
   "web_accessible_resources": [

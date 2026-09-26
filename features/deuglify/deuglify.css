@@ -1,0 +1,4 @@
+/* features/deuglify/deuglify.css
+   De-uglify styles. Scope every rule under html[data-st-deuglify="on"] so the
+   page is untouched when the feature is off. Remember dark mode inverts the
+   whole page, so test colors with dark mode both on and off. */

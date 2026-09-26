@@ -8,6 +8,7 @@ It's a Chrome extension (Manifest V3) that runs only on `*.servicetitan.com`.
 
 - Click the floating toggle button on any ServiceTitan page to turn dark mode on or off. Drag it wherever you like.
 - Or press **Alt+D**.
+- Right-click the toggle for extra options. Right now there's one: **De-uglify** (off by default).
 - The setting is saved per ServiceTitan host.
 
 ## Running it from this repo
@@ -25,6 +26,7 @@ It's a Chrome extension (Manifest V3) that runs only on `*.servicetitan.com`.
 | `engine.js` | Runs inside the ServiceTitan page. Owns dark mode itself and all the page-specific fixes. |
 | `content.js` | Runs in the extension's own sandbox. Draws the toggle button, saves settings and shows the first-run promo. |
 | `background.js` | Handles the Alt+D hotkey. |
+| `features/deuglify/` | The De-uglify switch. Sets `<html data-st-deuglify="on">` when it's on. |
 | `assets/`, `icons/` | Images. |
 
 ## Contributing
