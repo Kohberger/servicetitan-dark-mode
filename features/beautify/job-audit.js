@@ -8,7 +8,10 @@
     name: 'Job activity digest',
     description: 'Readable notes, native filters, and expandable activity groups.',
     matches: url => /^#\/Job\/Index\/\d+\/?(?:\?.*)?$/i.test(url.hash),
-    findRoot: () => document.querySelector('.job-history-tab-content .history > ul.unstyled'),
+    // ServiceTitan only adds .job-history-tab-content when the tenant has the
+    // InternalCommunicationEnabled feature on; other tenants render the same
+    // history list inside the classic job detail view.
+    findRoot: () => document.querySelector('.job-history-tab-content .history > ul.unstyled, .job-detail-view .history > ul.unstyled'),
     mount(list) {
       const history = list.parentElement;
       const owned = new Map();
