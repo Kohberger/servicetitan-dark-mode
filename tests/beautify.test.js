@@ -78,7 +78,7 @@ test('manifest keeps isolated all-frame feature scripts and no added permissions
   assert.notEqual(entry.world, 'MAIN');
   for (const file of entry.js) assert.doesNotThrow(() => new vm.Script(readFileSync(path.join(__dirname, '..', file), 'utf8')));
   assert.deepEqual(manifest.permissions, ['storage', 'scripting', 'activeTab']);
-  assert.equal(manifest.version, '1.3');
+  assert.match(manifest.version, /^\d+(\.\d+){1,3}$/);
 });
 
 test('every stylesheet selector is explicitly gated, including nested media rules', () => {
