@@ -31,6 +31,8 @@ html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar > .fo
   }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .pull-right, .buttons-block, .control-group) { float: none !important; margin: 0 !important; }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* Keep the actions on the right, even when they wrap below the filters. */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar > .form-inline > .buttons-block { margin-left: auto !important; }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .buttons-block > .pull-right) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .buttons-block > .pull-right)::before,
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .buttons-block > .pull-right)::after { content: none; }
@@ -169,7 +171,7 @@ html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter {
     font-size: 13px; line-height: 1.5; color: var(--sti-ink);
   }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter :is(th, td) {
-    box-sizing: border-box; padding: 10px 12px !important; vertical-align: top; text-align: left;
+    box-sizing: border-box; padding: 10px !important; vertical-align: top; text-align: left;
     border: 0 !important; border-bottom: 1px solid var(--sti-border) !important;
     background-color: var(--sti-surface) !important; color: var(--sti-ink) !important; text-shadow: none;
   }
@@ -185,9 +187,9 @@ html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter :is
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td :is(a, a text) { color: var(--sti-link) !important; font-weight: 600; text-decoration: none; }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td a:hover { text-decoration: underline; }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is([data-st-batch-zero], [data-st-batch-empty]) { color: var(--sti-muted) !important; }
-html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is(.address, .name) { min-width: 140px; }
-html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td.address { min-width: 200px; }
-html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is(.businessUnit, .type) { min-width: 160px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td.name { min-width: 120px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td.address { min-width: 160px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is(.businessUnit, .type) { min-width: 120px; }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is(.completed, .invoiced-on, .paid-on) { white-space: nowrap; font-variant-numeric: tabular-nums; }
 html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td[data-st-batch-tone] > :first-child {
     --tone-bg: var(--sti-neutral-bg); --tone-ink: var(--sti-neutral-ink); --tone-ring: var(--sti-neutral-ring);
