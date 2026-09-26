@@ -406,6 +406,12 @@ html[data-st-dark="on"]:has(.qa-header-job-name) :is(#app, #root, main, [data-an
 html[data-st-dark="on"] .qa-appointment-card > .CardSection {
   filter: invert(1) hue-rotate(180deg) !important;
 }
+/* Breadcrumb bar on record pages (the Location page shows "Customer > Location").
+   It's transparent, so the gray canvas showed through as a strip above an
+   otherwise dark page. Give it the same white base (renders near-black). */
+html[data-st-dark="on"] ul.Breadcrumb {
+  background-color: #FFFFFF !important;
+}
 
 /* ===== Semantic UI dropdown menus (tag picker, form selects, etc.) ===========
    .ui.dropdown .menu items get black text → white via the global html filter,
