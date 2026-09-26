@@ -4,6 +4,6 @@
   "description": "Dev-only scripts. The extension itself has no dependencies or build step.",
   "scripts": {
     "test": "node --test \"tests/**/*.test.js\"",
-    "check": "node --check engine.js && node --check content.js && node --check toggle-core.js && node --check background.js && node --check features/deuglify/deuglify.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\""
+    "check": "node --check engine.js && node --check content.js && node --check toggle-core.js && node --check background.js && node --check features/deuglify/deuglify.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\" && node --check features/deuglify/runtime.js && node --check features/deuglify/invoice-header.js && node --check features/deuglify/invoice.js && node --check features/deuglify/job-audit.js"
   }
 }

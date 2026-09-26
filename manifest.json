@@ -60,7 +60,11 @@
         "*://*.servicetitan.com/*"
       ],
       "js": [
-        "features/deuglify/deuglify.js"
+        "features/deuglify/deuglify.js",
+        "features/deuglify/runtime.js",
+        "features/deuglify/invoice-header.js",
+        "features/deuglify/invoice.js",
+        "features/deuglify/job-audit.js"
       ],
       "css": [
         "features/deuglify/deuglify.css"

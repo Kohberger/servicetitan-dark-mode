@@ -1,32 +1,34 @@
-// features/deuglify/deuglify.js — ISOLATED world, every frame.
-// Mirrors the De-uglify switch (chrome.storage.sync "st_feature_deuglify",
-// toggled from the floating button's right-click menu) onto
-// <html data-st-deuglify="on">. All De-uglify styling should be scoped under
-// that attribute so turning it off leaves ServiceTitan exactly as shipped.
-(function () {
+// ISOLATED world, every frame. Global, opt-in De-uglify preference.
+(() => {
   if (!/servicetitan/i.test(location.hostname)) return;
-
-  const KEY = "st_feature_deuglify";
-  const ATTR = "data-st-deuglify";
-
-  // Same print-page gate as engine.js: printed invoices/estimates stay untouched.
-  const p = location.pathname + location.search;
-  if (/\/app\/api\/.*\/print\//i.test(p) ||
-      /\/Invoice\/Print\//i.test(p) ||
-      /\/Estimate\/Print\//i.test(p) ||
-      /[?&]print=true/i.test(p)) return;
-
-  const apply = (on) => {
+  const KEY = 'st_feature_deuglify';
+  const ATTR = 'data-st-deuglify';
+  if (/\/app\/api\/.*\/print\/|\/(?:Invoice|Estimate)\/Print\/|[?&]print=true\b/i.test(location.pathname + location.search + location.hash)) return;
+  let on = false, revision = 0;
+  const apply = () => {
     const el = document.documentElement;
     if (!el) return;
-    if (on) el.setAttribute(ATTR, "on");
+    if (on) el.setAttribute(ATTR, 'on');
     else el.removeAttribute(ATTR);
   };
-
+  // document_start can precede the root element.
+  const ready = new MutationObserver(() => {
+    if (document.documentElement) { apply(); ready.disconnect(); }
+  });
+  if (!document.documentElement) ready.observe(document, { childList: true, subtree: true });
   try {
-    chrome.storage.sync.get(KEY, (res) => apply(res?.[KEY] === true));
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === "sync" && KEY in changes) apply(changes[KEY].newValue === true);
+      if (area === 'sync' && KEY in changes) {
+        revision++;
+        on = changes[KEY].newValue === true;
+        apply();
+      }
+    });
+    const initialRevision = revision;
+    chrome.storage.sync.get(KEY, result => {
+      if (revision !== initialRevision) return;
+      on = result?.[KEY] === true;
+      apply();
     });
   } catch {}
 })();
