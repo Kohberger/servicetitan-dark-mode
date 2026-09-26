@@ -1,0 +1,213 @@
+/* Beautify: invoice batching (Accounting > Invoicing > Unbatched and batch views).
+   Same design language as the invoice page: slate canvas, white cards, 1px slate
+   borders, 10px radius, 12px muted labels and tabular numbers. Everything is
+   scoped to #InvoiceView[data-st-batch-ui], which batching.js sets only while
+   Beautify is on, and to screen media so printing is untouched. */
+@media screen {
+/* Paint the page to match so ServiceTitan's gray background doesn't frame it. */
+html[data-st-beautify="on"] body:has(#InvoiceView[data-st-batch-ui]) { background: #f8fafc !important; }
+
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] {
+    --sti-canvas: #f8fafc; --sti-surface: #fff; --sti-header: #f8fafc; --sti-hover: #f1f5f9;
+    --sti-border: #e2e8f0; --sti-ink: #172033; --sti-muted: #526078; --sti-link: #1d4ed8; --sti-focus: #2563eb;
+    --sti-ok-bg: #ecfdf3; --sti-ok-ink: #067647; --sti-ok-ring: #abefc6;
+    --sti-warn-bg: #fffaeb; --sti-warn-ink: #b54708; --sti-warn-ring: #fedf89;
+    --sti-bad-bg: #fef3f2; --sti-bad-ink: #b42318; --sti-bad-ring: #fecdca;
+    --sti-neutral-bg: #f2f4f7; --sti-neutral-ink: #344054; --sti-neutral-ring: #d0d5dd;
+    box-sizing: border-box; min-height: 100%; margin: 0 !important; padding: 24px 24px 48px !important;
+    background: var(--sti-canvas); color: var(--sti-ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px; line-height: 1.5;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .row { display: block; margin: 0 !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .row::before, html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .row::after { content: none; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] :is(a, button, input, select, [tabindex]):focus-visible { outline: 2px solid var(--sti-focus) !important; outline-offset: 2px; }
+
+/* ===== Toolbar: batch picker on the left, actions on the right ============== */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar { display: block; margin: 0 0 20px !important; padding: 0 !important; border: 0; background: transparent; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar > .form-inline {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+    float: none !important; width: auto !important; margin: 0 !important;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .pull-right, .buttons-block, .control-group) { float: none !important; margin: 0 !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* Keep the actions on the right, even when they wrap below the filters. */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar > .form-inline > .buttons-block { margin-left: auto !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .buttons-block > .pull-right) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .buttons-block > .pull-right)::before,
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(.pull-left, .buttons-block > .pull-right)::after { content: none; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(input:not([type]), input[type="text"], input[type="search"], .ms-choice) {
+    box-sizing: border-box; height: 36px; margin: 0 !important; padding: 7px 12px;
+    border: 1px solid var(--sti-border) !important; border-radius: 7px !important;
+    background-color: var(--sti-surface) !important; color: var(--sti-ink) !important;
+    font: 500 13px/20px ui-sans-serif, system-ui, sans-serif; box-shadow: none;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .ms-choice { padding: 0; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .ms-choice > span { line-height: 34px; padding-left: 12px; color: var(--sti-ink); }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .ms-choice > div { top: 5px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar :is(input, .ms-choice):focus { border-color: var(--sti-focus) !important; outline: 0; box-shadow: 0 0 0 3px rgb(37 99 235 / .15); }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .btn {
+    box-sizing: border-box; display: inline-flex; align-items: center; gap: 8px; min-height: 36px;
+    margin: 0 !important; padding: 7px 13px !important;
+    border: 1px solid var(--sti-border) !important; border-radius: 7px !important;
+    background-color: var(--sti-surface) !important; background-image: none !important;
+    color: var(--sti-ink) !important; font: 600 13px/20px ui-sans-serif, system-ui, sans-serif;
+    text-shadow: none; box-shadow: 0 1px 2px rgb(16 24 40 / .05); text-decoration: none; white-space: nowrap;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .btn:hover { background-color: var(--sti-hover) !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .btn .caret { margin: 0; border-top-color: currentColor; opacity: .7; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .dropdown-menu {
+    margin-top: 6px; padding: 6px; border: 1px solid var(--sti-border); border-radius: 10px;
+    background: var(--sti-surface); box-shadow: 0 10px 28px rgb(0 0 0 / .14);
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .dropdown-menu li > a {
+    padding: 8px 10px; border-radius: 6px; color: var(--sti-ink) !important; background: transparent !important;
+    font: 500 13px/20px ui-sans-serif, system-ui, sans-serif;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] section.toolbar .dropdown-menu li > a:hover { background: var(--sti-hover) !important; }
+
+/* ===== Overview: Unbatched / Batch switch above the summary tiles =========== */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] { display: flex !important; flex-direction: column; align-items: stretch; gap: 16px; margin: 0 0 28px !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] > [class*="span"] { float: none !important; width: auto !important; min-width: 0; margin: 0 !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] ul.nav-pills {
+    display: inline-flex; gap: 4px; margin: 0; padding: 4px;
+    border: 1px solid var(--sti-border); border-radius: 10px; background: var(--sti-hover);
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] ul.nav-pills::before, html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] ul.nav-pills::after { content: none; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] ul.nav-pills > li { float: none; margin: 0; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] ul.nav-pills > li:not(:has(a)) { display: none; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] ul.nav-pills > li > a {
+    display: block; margin: 0; padding: 6px 14px; border-radius: 7px;
+    background: transparent !important; color: var(--sti-muted) !important;
+    font: 600 13px/20px ui-sans-serif, system-ui, sans-serif; text-decoration: none; text-shadow: none;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-overview] ul.nav-pills > li.active > a {
+    background: var(--sti-surface) !important; color: var(--sti-ink) !important;
+    box-shadow: 0 1px 2px rgb(16 24 40 / .08), 0 0 0 1px var(--sti-border);
+  }
+
+/* Summary tiles: a 12-column grid. The four totals come first and span 3
+   columns (one row); payment methods follow and span 2 (six per row). Order is
+   visual only; the bound nodes stay where Knockout put them. */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] {
+    display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px;
+    float: none !important; width: auto !important; margin: 0 !important; text-align: left;
+  }
+/* .clearfix pseudo-elements would otherwise take a grid cell each. */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats]::before, html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats]::after { content: none; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat {
+    box-sizing: border-box; display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 4px;
+    grid-column: span 2; min-width: 0; margin: 0 !important; padding: 12px 14px !important;
+    border: 1px solid var(--sti-border); border-radius: 10px; background: var(--sti-surface) !important;
+    text-align: left; box-shadow: none;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat > .description {
+    display: block; margin: 0; color: var(--sti-muted) !important;
+    font-size: 12px; line-height: 16px; font-weight: 500; white-space: normal;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat > .value {
+    display: block; margin: 0; color: var(--sti-ink) !important;
+    font-size: 15px; line-height: 22px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat[data-st-batch-stat="total"] { grid-column: span 3; padding: 16px 18px !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat[data-st-batch-stat="total"] > .description { font-size: 13px; line-height: 18px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat[data-st-batch-stat="total"] > .value { font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -.01em; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > .st-batch-stats-label {
+    grid-column: 1 / -1; margin: 4px 0 -4px; color: var(--sti-muted); text-align: left !important;
+    font: 600 12px/16px ui-sans-serif, system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > [data-st-batch-label="totals"] { order: -10; margin-top: 0; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > [data-st-batch-total="revenue"] { order: -9; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > [data-st-batch-total="paid"] { order: -8; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > [data-st-batch-total="balance"] { order: -7; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > [data-st-batch-total="tax"] { order: -6; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > [data-st-batch-label="methods"] { order: -5; margin-top: 12px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats]:not(:has(> [data-st-batch-stat="method"])) > [data-st-batch-label="methods"] { display: none; }
+
+/* ===== Sections (Invoices, Payments, Vendor Bills, ...) as cards =========== */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .invoicing-table-header {
+    box-sizing: border-box; margin: 28px 0 0 !important; padding: 14px 18px !important;
+    border: 1px solid var(--sti-border); border-radius: 10px 10px 0 0; background: var(--sti-surface);
+    cursor: pointer; user-select: none;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .invoicing-table-header:has(+ section:is([style*="display: none"], :not(:has(> *)))) { border-radius: 10px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .invoicing-table-header h2 {
+    display: flex; align-items: center; gap: 10px; margin: 0;
+    color: var(--sti-ink) !important; font-size: 15px; line-height: 22px; font-weight: 650; text-shadow: none;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .invoicing-table-header h2 > i.fa { width: 14px; color: var(--sti-muted); font-size: 16px; text-align: center; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > .invoicing-table-header + section:has(> *),
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section:not(.invoicing-table-header + section):has(> *) {
+    box-sizing: border-box; margin: 0 !important; padding: 0 !important;
+    border: 1px solid var(--sti-border); border-top: 0; border-radius: 0 0 10px 10px;
+    background: var(--sti-surface); overflow-x: auto; scrollbar-width: thin;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section:not(.invoicing-table-header + section):has(> *) { margin-top: 28px !important; border-top: 1px solid var(--sti-border); border-radius: 10px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > p { margin: 0; padding: 16px 18px; color: var(--sti-muted); font-size: 13px; }
+
+/* Paging and bulk links above each table. */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+    margin: 0 !important; padding: 12px 18px; border-bottom: 1px solid var(--sti-border); font-size: 13px;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls[data-st-batch-idle] { padding: 0; border-bottom: 0; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls > .control-group { float: none; margin: 0 !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls .paging { display: inline-flex; align-items: center; gap: 8px; margin-right: 8px; color: var(--sti-muted); font-weight: 500; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls .paging > a {
+    display: inline-grid; place-items: center; width: 28px; height: 28px; box-sizing: border-box;
+    border: 1px solid var(--sti-border); border-radius: 7px; background: var(--sti-surface); color: var(--sti-ink); cursor: pointer;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls .paging > a:hover { background: var(--sti-hover); }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls > a.control-group {
+    display: inline-flex; align-items: center; min-height: 30px; box-sizing: border-box; padding: 4px 10px;
+    border: 1px solid var(--sti-border); border-radius: 7px; background: var(--sti-surface);
+    color: var(--sti-ink) !important; font-weight: 600; text-decoration: none; cursor: pointer;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] > section > .invoicing-table-controls > a.control-group:hover { background: var(--sti-hover); }
+
+/* ===== Tables ============================================================== */
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter {
+    width: 100% !important; margin: 0 !important; border-collapse: separate; border-spacing: 0;
+    font-size: 13px; line-height: 1.5; color: var(--sti-ink);
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter :is(th, td) {
+    box-sizing: border-box; padding: 10px !important; vertical-align: top; text-align: left;
+    border: 0 !important; border-bottom: 1px solid var(--sti-border) !important;
+    background-color: var(--sti-surface) !important; color: var(--sti-ink) !important; text-shadow: none;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter thead th {
+    background-color: var(--sti-header) !important; color: var(--sti-muted) !important;
+    font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap;
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter thead th.header { padding-right: 24px !important; background-position: right 6px center; cursor: pointer; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter tbody tr.clickable { cursor: pointer; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter tbody tr:hover > td { background-color: var(--sti-hover) !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter tbody tr:last-child > td { border-bottom: 0 !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter :is(th, td).format-currency { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td :is(a, a text) { color: var(--sti-link) !important; font-weight: 600; text-decoration: none; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td a:hover { text-decoration: underline; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is([data-st-batch-zero], [data-st-batch-empty]) { color: var(--sti-muted) !important; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td.name { min-width: 120px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td.address { min-width: 160px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is(.businessUnit, .type) { min-width: 120px; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td:is(.completed, .invoiced-on, .paid-on) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td[data-st-batch-tone] > :first-child {
+    --tone-bg: var(--sti-neutral-bg); --tone-ink: var(--sti-neutral-ink); --tone-ring: var(--sti-neutral-ring);
+    display: inline-block; padding: 1px 8px; border-radius: 6px; white-space: nowrap;
+    font-size: 12px; line-height: 18px; font-weight: 500;
+    background: var(--tone-bg); color: var(--tone-ink); box-shadow: inset 0 0 0 1px var(--tone-ring);
+  }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td[data-st-batch-tone="none"] > :first-child { display: none; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td[data-st-batch-tone="success"] > :first-child { --tone-bg: var(--sti-ok-bg); --tone-ink: var(--sti-ok-ink); --tone-ring: var(--sti-ok-ring); }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td[data-st-batch-tone="warning"] > :first-child { --tone-bg: var(--sti-warn-bg); --tone-ink: var(--sti-warn-ink); --tone-ring: var(--sti-warn-ring); }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] table.tablesorter td[data-st-batch-tone="danger"] > :first-child { --tone-bg: var(--sti-bad-bg); --tone-ink: var(--sti-bad-ink); --tone-ring: var(--sti-bad-ring); }
+}
+
+@media screen and (max-width: 1100px) {
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat[data-st-batch-stat="total"] { grid-column: span 6; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat[data-st-batch-stat="method"] { grid-column: span 4; }
+}
+@media screen and (max-width: 700px) {
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat[data-st-batch-stat="total"] { grid-column: span 12; }
+html[data-st-beautify="on"] #InvoiceView[data-st-batch-ui] [data-st-batch-stats] > span.stat[data-st-batch-stat="method"] { grid-column: span 6; }
+}

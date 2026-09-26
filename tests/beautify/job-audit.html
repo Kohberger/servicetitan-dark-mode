@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" data-st-beautify="on"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Job activity digest fixture</title>
+<style>body{font:14px/1.5 system-ui;margin:28px auto;max-width:960px;padding:0 20px;background:#f1f4f6}button{cursor:pointer}.description{margin-left:42px}.avatar{float:left}.unstyled{list-style:none;padding:0}.form-actions{display:none}.input-icon{width:80%}.btn-toolbar{margin:20px 0}.btn{padding:6px 12px}#results{white-space:pre-wrap;background:white;padding:16px;border:1px solid #ddd}.timestamp{font-size:11px}.fixture-native{margin-bottom:12px}</style>
+<link rel="stylesheet" href="../../features/beautify/beautify.css"><style>
+/* Simulate late legacy CSS that previously won on the live page. */
+.history form.add-note-view{width:60%;display:inline-block}
+.history form.add-note-view .input-icon{width:550px}
+.history form.add-note-view textarea{width:550px;font-family:serif}
+.history form.add-note-view textarea::placeholder{font-family:"Times New Roman"}
+.history input[type=search]{height:20px;padding:0;font-family:serif;border-radius:0}
+</style><link rel="stylesheet" href="matrix.css"></head><body>
+<h1>Job activity digest</h1><p>Synthetic activity only. Native form and filter stand-ins never send network requests.</p>
+<button id="run">Run checks</button><pre id="results">Ready</pre>
+<div class="job-history-tab-content"><div class="history">
+<form class="add-note-view"><div class="input-icon icon-comment"><textarea name="Value" placeholder="Leave a note..."></textarea></div><div class="form-actions hide" style="display:none"><button class="btn btn-success" type="submit" disabled>Save</button><button type="button" class="native-cancel" style="display:none">Cancel</button><label class="checkbox"><input type="checkbox" name="Pin"> Pin this note to the top</label></div></form>
+<a id="job-upload-attachment-btn" href="#" aria-label="Attach files">↗</a><div class="upload-info-button"><button type="button">ⓘ</button></div>
+<div class="btn-toolbar" data-cy="history-section-selector"><div class="btn-group"><button class="btn active" data-filter="all">All (8)</button><button class="btn" data-filter="notes">Notes (1)</button><button class="btn" data-filter="files">Files (3)</button></div></div>
+<ul class="unstyled"></ul></div></div>
+<script src="../../features/beautify/runtime.js"></script><script src="../../features/beautify/job-audit.js"></script><script src="job-audit.js"></script>
+<script src="matrix.js"></script></body></html>

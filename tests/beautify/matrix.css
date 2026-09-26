@@ -1,0 +1,8 @@
+/* Fixture only: the production engine owns these effects. */
+html[data-st-dark="on"] { filter: invert(1) hue-rotate(180deg) contrast(.85); background: white; }
+html[data-st-dark="on"] :is(img,[data-anv="card"]) { filter: invert(1) hue-rotate(180deg); }
+.fixture-matrix-controls { padding: 12px; border: 1px solid #bbb; background: white; margin: 12px 0; }
+.fixture-matrix-controls button { margin-right: 8px; }
+#matrix-results { white-space: pre-wrap; }
+
+.fixture-matrix-controls { position: relative; z-index: 2; margin-left: 212px; }

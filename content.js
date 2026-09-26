@@ -2,12 +2,32 @@
 (function () {
   const isST = /servicetitan/i.test(location.hostname);
   if (!isST) return;
+  const Core = globalThis.STToggleCore; // toggle-core.js, loaded first by manifest.json
 
   const HOST_KEY = `st_dark_enabled::${location.host}`;
-  const POS_KEY    = `st_dark_pos::${location.host}`;    // {x, y} pixel coords
+  const POS_KEY    = `st_dark_pos::${location.host}`;    // v2 edge offsets (legacy: {x, y} pixels)
   const CORNER_KEY = `st_dark_corner::${location.host}`; // legacy — migration only
   const PROMO_KEY = "st_dark_promo_dismissed"; // boolean
   const margin = 14;
+
+  // One-time "what's new" notice for Beautify, which ships off by default.
+  const NOTICE = {
+    seenKey: "st_notice_beautify_seen",   // sync: true once the user answers it
+    countKey: "st_notice_beautify_shown", // local: times shown on this device
+    feature: "st_feature_beautify",
+    maxShows: 3,                          // stop offering it if it's ignored
+  };
+
+  // Feature switches shown in the toggle's right-click menu. Each is a boolean
+  // in chrome.storage.sync (default off); the feature's own script reacts to it.
+  const FEATURES = [
+    {
+      key: "st_feature_beautify",
+      label: "Beautify",
+      pages: "Invoices, invoice batching and job History",
+      icon: `<path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" fill="currentColor"/>`,
+    },
+  ];
 
   const post = (payload) => window.postMessage(Object.assign({ __st: true }, payload), "*");
 
@@ -35,7 +55,64 @@
                border-radius: 6px; border: 1px solid rgba(255,255,255,.08); white-space: nowrap;
                opacity: 0; transform: translateX(6px); transition: opacity .15s ease, transform .15s ease; pointer-events: none; }
         .wrap:hover + .tip { opacity: 1; transform: translateX(0); }
+        .menu-open .tip { display: none; }
+
+        /* Right-click feature bubbles. Opens toward the middle of the screen. */
+        .menu { position: absolute; display: flex; flex-direction: column-reverse; gap: 10px;
+                pointer-events: none; bottom: 54px; }
+        .menu.down { flex-direction: column; bottom: auto; top: 54px; }
+        .menu.right { left: 4px; }
+        .menu.left { right: 4px; }
+        .item { display: flex; align-items: center; gap: 8px; pointer-events: none;
+                opacity: 0; transform: translateY(10px) scale(.6);
+                transition: opacity .16s ease, transform .2s cubic-bezier(.3,1.5,.6,1); }
+        .menu.down .item { transform: translateY(-10px) scale(.6); }
+        .menu.left .item { flex-direction: row-reverse; }
+        .menu-open .item { opacity: 1; transform: none; pointer-events: auto; }
+        .bubble { position: relative; width: 36px; height: 36px; flex: none; display: grid; place-items: center;
+                  border-radius: 999px; padding: 0; cursor: pointer; color: rgba(255,255,255,.55);
+                  background: rgba(28,28,28,.85); backdrop-filter: blur(8px);
+                  border: 1px solid rgba(255,255,255,.08); box-shadow: 0 4px 12px rgba(0,0,0,.35);
+                  transition: background .15s ease, color .15s ease, box-shadow .15s ease, transform .1s ease; }
+        .bubble:hover { color: #fff; transform: translateY(-1px); }
+        .bubble:active { transform: scale(.94); }
+        .bubble:focus-visible { outline: 2px solid #2f8cff; outline-offset: 2px; }
+        .bubble svg { width: 20px; height: 20px; display: block; }
+        .bubble[aria-checked="true"] { color: #fff; background: #f47b20; border-color: rgba(255,255,255,.25);
+                                        box-shadow: 0 0 0 3px rgba(244,123,32,.3), 0 4px 12px rgba(0,0,0,.35); }
+        .check { position: absolute; right: -3px; bottom: -3px; width: 15px; height: 15px; border-radius: 999px;
+                 background: #1faa59; border: 2px solid rgba(28,28,28,.95); display: none; place-items: center; }
+        .check svg { width: 9px; height: 9px; }
+        .bubble[aria-checked="true"] .check { display: grid; }
+        .label { background: rgba(28,28,28,.9); color: #fff; white-space: nowrap; pointer-events: none;
+                 font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 6px 8px;
+                 border-radius: 6px; border: 1px solid rgba(255,255,255,.08); }
+        .label .state { opacity: .6; margin-left: 4px; }
+        .label .pages { display: block; margin-top: 3px; font-size: 11px; opacity: .65; }
+
+        /* One-time "what's new" notice. Opens toward the middle of the screen, like the menu. */
+        .notice { position: absolute; width: 272px; box-sizing: border-box; padding: 14px 16px 12px;
+                  bottom: 54px; background: rgba(28,28,28,.96); color: #fff;
+                  border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
+                  box-shadow: 0 10px 30px rgba(0,0,0,.45); pointer-events: auto;
+                  font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+        .notice.down { bottom: auto; top: 54px; }
+        .notice.left { right: 0; }
+        .notice.right { left: 0; }
+        .notice[hidden] { display: none; }
+        .notice-title { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: 14px; font-weight: 650; }
+        .notice-title svg { width: 16px; height: 16px; flex: none; color: #f47b20; }
+        .notice-body { margin: 0 0 12px; opacity: .9; }
+        .notice-actions { display: flex; gap: 8px; margin: 0 0 10px; }
+        .notice-actions button { padding: 8px 12px; border-radius: 8px; cursor: pointer;
+                                 font: 600 13px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+                                 border: 1px solid rgba(255,255,255,.18); background: transparent; color: #fff; }
+        .notice-actions .notice-on { background: #f47b20; border-color: transparent; }
+        .notice-actions button:focus-visible { outline: 2px solid #2f8cff; outline-offset: 2px; }
+        .notice-hint { margin: 0; font-size: 12px; opacity: .6; }
+        .notice-open .tip { display: none; }
       </style>
+      <div class="shell" id="shell">
       <div class="wrap" id="btn" title="Toggle dark (Alt+D)">
         <svg id="sun" class="icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.79 1.8-1.79zM1 13h3v-2H1v2zm10-9h2V1h-2v3zm7.07 1.05l1.79-1.79-1.79-1.79-1.79 1.79 1.79 1.79zM20 13h3v-2h-3v2zm-8 8h2v-3h-2v3zm-7.07-2.05l1.79 1.79 1.8-1.8-1.79-1.79-1.8 1.8zM17.24 19.16l1.79 1.79 1.8-1.8-1.79-1.79-1.8 1.8zM12 6a6 6 0 100 12A6 6 0 0012 6z" fill="white"/>
@@ -45,112 +122,189 @@
         </svg>
       </div>
       <div class="tip">ServiceTitan Dark</div>
+      <div class="menu" id="menu" role="menu" aria-label="ServiceTitan Dark options">
+        ${FEATURES.map((f) => `
+          <div class="item">
+            <button class="bubble" role="menuitemcheckbox" aria-checked="false" data-key="${f.key}" title="${f.label}">
+              <svg viewBox="0 0 24 24" aria-hidden="true">${f.icon}</svg>
+              <span class="check" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="#fff"/></svg>
+              </span>
+            </button>
+            <span class="label">${f.label}<span class="state">Off</span><span class="pages">${f.pages}</span></span>
+          </div>`).join("")}
+      </div>
+      <div class="notice" id="notice" role="dialog" aria-labelledby="notice-title" hidden>
+        <p class="notice-title" id="notice-title"><svg viewBox="0 0 24 24" aria-hidden="true">${FEATURES[0].icon}</svg>New: Beautify</p>
+        <p class="notice-body">A cleaner layout for invoices, invoice batching and the History section on job pages.</p>
+        <div class="notice-actions">
+          <button type="button" class="notice-on" id="notice-on">Turn it on</button>
+          <button type="button" id="notice-later">Not now</button>
+        </div>
+        <p class="notice-hint">Right-click this button anytime to switch it on or off.</p>
+      </div>
+      </div>
     `;
     document.documentElement.appendChild(host);
 
     const $ = (sel) => root.querySelector(sel);
     const btn = $('#btn'); const sun = $('#sun'); const moon = $('#moon');
+    const shell = $('#shell'); const menu = $('#menu');
 
     const setIcon = (isEnabled) => {
       sun.classList.toggle('hidden', !!isEnabled);
       moon.classList.toggle('hidden', !isEnabled);
     };
 
+    // ── Position ──────────────────────────────────────────────────────────
+    // Stored as offsets from the nearest viewport edges (see toggle-core.js) so
+    // the toggle stays anchored to its corner as the window resizes.
     const SIZE = 44; // toggle dimensions (px) — matches host width/height
-    function applyPos(x, y) {
-      const maxX = window.innerWidth  - SIZE - margin;
-      const maxY = window.innerHeight - SIZE - margin;
-      x = Math.max(margin, Math.min(x, maxX));
-      y = Math.max(margin, Math.min(y, maxY));
-      host.style.left = x + "px"; host.style.top = y + "px";
+    const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });
+    let position = Core.defaultPosition();
+    let userPositioned = false; // set once the user drags; stale storage reads must not undo it
+
+    function placeAt(left, top) {
+      host.style.left = left + "px"; host.style.top = top + "px";
       host.style.right = "auto"; host.style.bottom = "auto";
     }
-    function cornerToPos(c) {
-      const w = window.innerWidth, h = window.innerHeight;
-      if (c === "lb") return { x: margin,         y: h - SIZE - margin };
-      if (c === "rt") return { x: w - SIZE - margin, y: margin           };
-      if (c === "lt") return { x: margin,           y: margin            };
-      return               { x: w - SIZE - margin, y: h - SIZE - margin }; // rb
+    function render() {
+      const { left, top } = Core.positionToPixels(position, SIZE, viewport(), margin);
+      placeAt(left, top);
     }
+    render(); // default bottom-right until storage answers
 
     try {
       chrome.storage.sync.get([POS_KEY, CORNER_KEY], (res) => {
-        if (res[POS_KEY] && typeof res[POS_KEY].x === "number") {
-          applyPos(res[POS_KEY].x, res[POS_KEY].y);        // saved free position
-        } else if (res[CORNER_KEY]) {
-          const p = cornerToPos(res[CORNER_KEY]);            // migrate old corner
-          applyPos(p.x, p.y);
-        } else {
-          const p = cornerToPos("rb");                       // default: bottom-right
-          applyPos(p.x, p.y);
-        }
+        if (userPositioned) return;
+        const { position: stored, migrated } =
+          Core.resolveStoredPosition(res?.[POS_KEY], res?.[CORNER_KEY], SIZE, viewport());
+        position = stored;
+        render();
+        if (migrated) { try { chrome.storage.sync.set({ [POS_KEY]: position }); } catch {} }
       });
-    } catch { applyPos(cornerToPos("rb").x, cornerToPos("rb").y); }
+    } catch {}
 
-    let dragging = false, moved = false;
-    let startX = 0, startY = 0, startLeft = 0, startTop = 0;
-    const THRESH = 5;
-
-    const cleanup = (aborters=[]) => {
-      aborters.forEach(a => { try { a.abort(); } catch{} });
-      btn.style.cursor = "pointer";
-      dragging = false; moved = false;
-    };
+    // Re-place (never re-save) on resize, at most once per frame. Clamping
+    // happens in render(), so the preferred offsets survive a shrink/grow.
+    let resizeFrame = 0;
+    window.addEventListener('resize', () => {
+      if (resizeFrame) return;
+      resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; render(); });
+    }, { passive: true });
 
     const toggle = () => post({ type: "ST_DARK_TOGGLE" });
 
+    // ── Right-click feature menu ──────────────────────────────────────────
+    const bubbles = [...root.querySelectorAll('.bubble')];
+    const setBubble = (key, on) => {
+      const b = bubbles.find(el => el.dataset.key === key); if (!b) return;
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      const state = b.parentElement.querySelector('.state');
+      if (state) state.textContent = on ? 'On' : 'Off';
+    };
+    const isMenuOpen = () => shell.classList.contains('menu-open');
+    const closeMenu = () => shell.classList.remove('menu-open');
+    const openMenu = () => {
+      hideNotice();
+      // Fan out toward the middle of the screen so bubbles never go off-edge.
+      const r = host.getBoundingClientRect();
+      menu.classList.toggle('down', r.top < window.innerHeight / 2);
+      const toLeft = r.left > window.innerWidth / 2;
+      menu.classList.toggle('left', toLeft);
+      menu.classList.toggle('right', !toLeft);
+      shell.classList.add('menu-open');
+    };
+
+    try {
+      chrome.storage.sync.get(FEATURES.map(f => f.key), (res) => {
+        FEATURES.forEach(f => setBubble(f.key, res?.[f.key] === true));
+      });
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'sync') return;
+        FEATURES.forEach(f => { if (f.key in changes) setBubble(f.key, changes[f.key].newValue === true); });
+      });
+    } catch {}
+
+    bubbles.forEach(b => {
+      b.addEventListener('pointerdown', (e) => e.stopPropagation());
+      b.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const key = b.dataset.key;
+        const next = b.getAttribute('aria-checked') !== 'true';
+        setBubble(key, next);
+        try { chrome.storage.sync.set({ [key]: next }); } catch {}
+      });
+    });
+
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      isMenuOpen() ? closeMenu() : openMenu();
+    });
+    // Clicks inside our closed shadow root retarget to `host`, so anything else is "outside".
+    window.addEventListener('pointerdown', (e) => {
+      if (isMenuOpen() && !e.composedPath().includes(host)) closeMenu();
+    }, true);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isMenuOpen()) closeMenu(); }, true);
+    window.addEventListener('resize', closeMenu, { passive: true });
+
+    // ── Tap to toggle, drag to move ───────────────────────────────────────
+    // One gesture at a time. Only a pointerup without a drag toggles; cancel,
+    // lost capture and window blur end the gesture without toggling.
+    let gesture = null;
+    let suppressClick = false;
+    btn.addEventListener("click", (e) => {
+      if (suppressClick) { suppressClick = false; e.preventDefault(); e.stopImmediatePropagation(); }
+    }, { capture: true });
+
     btn.addEventListener("pointerdown", (ev) => {
       if (ev.button !== 0 && ev.pointerType === "mouse") return;
+      if (gesture) return;
       ev.preventDefault();
-      dragging = false; moved = false;
-      startX = ev.clientX; startY = ev.clientY;
+      const menuWasOpen = isMenuOpen();
+      closeMenu();
+
+      const pointerId = ev.pointerId;
       const rect = host.getBoundingClientRect();
-      startLeft = rect.left; startTop = rect.top;
+      const startLeft = rect.left, startTop = rect.top;
+      const ac = new AbortController();
+      const opts = { signal: ac.signal };
+
+      const current = gesture = Core.createGesture({
+        x: ev.clientX,
+        y: ev.clientY,
+        onDragMove: (dx, dy) => {
+          const vp = viewport();
+          placeAt(Core.clampAxis(startLeft + dx, SIZE, vp.width, margin),
+                  Core.clampAxis(startTop + dy, SIZE, vp.height, margin));
+        },
+        onDragEnd: () => {
+          suppressClick = true;
+          userPositioned = true;
+          const r = host.getBoundingClientRect();
+          position = Core.positionFromRect(r.left, r.top, SIZE, viewport());
+          render();
+          try { chrome.storage.sync.set({ [POS_KEY]: position }); } catch {}
+        },
+        onTap: () => { if (!menuWasOpen) toggle(); },
+      });
+
+      const settle = () => {
+        ac.abort();
+        if (gesture === current) gesture = null;
+        btn.style.cursor = "pointer";
+        try { btn.releasePointerCapture(pointerId); } catch {}
+      };
+      const mine = (e) => e.pointerId === pointerId;
+
       btn.style.cursor = "grabbing";
-      try { btn.setPointerCapture(ev.pointerId); } catch {}
+      try { btn.setPointerCapture(pointerId); } catch {}
 
-      const acMove = new AbortController();
-      const acUp = new AbortController();
-      const acCancel = new AbortController();
-      const acLost = new AbortController();
-      const acBlur = new AbortController();
-
-      const onMove = (e) => {
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        if (!dragging && (Math.abs(dx) > THRESH || Math.abs(dy) > THRESH)) dragging = true;
-        if (dragging) {
-          moved = true;
-          let nx = startLeft + dx;
-          let ny = startTop + dy;
-          const maxX = window.innerWidth - host.offsetWidth - margin;
-          const maxY = window.innerHeight - host.offsetHeight - margin;
-          nx = Math.max(margin, Math.min(nx, maxX));
-          ny = Math.max(margin, Math.min(ny, maxY));
-          host.style.left = nx + "px";
-          host.style.top = ny + "px";
-          host.style.right = "auto";
-          host.style.bottom = "auto";
-        }
-      };
-      const finish = (e) => {
-        try { btn.releasePointerCapture(ev.pointerId); } catch {}
-        if (dragging) {
-          const rect2 = host.getBoundingClientRect();
-          try { chrome.storage.sync.set({ [POS_KEY]: { x: rect2.left, y: rect2.top } }); } catch {}
-        }
-        if (!moved) { toggle(); }
-        cleanup([acMove, acUp, acCancel, acLost, acBlur]);
-      };
-
-      const onClickOnce = (e) => { if (moved) { e.preventDefault(); e.stopImmediatePropagation(); } };
-      btn.addEventListener("click", onClickOnce, { once: true, capture: true });
-
-      window.addEventListener("pointermove", onMove, { signal: acMove.signal });
-      window.addEventListener("pointerup", finish, { signal: acUp.signal });
-      window.addEventListener("pointercancel", finish, { signal: acCancel.signal });
-      btn.addEventListener("lostpointercapture", finish, { signal: acLost.signal });
-      window.addEventListener("blur", finish, { signal: acBlur.signal });
+      window.addEventListener("pointermove", (e) => { if (mine(e)) current.move(e.clientX, e.clientY); }, opts);
+      window.addEventListener("pointerup", (e) => { if (mine(e)) { current.end(e.clientX, e.clientY); settle(); } }, opts);
+      window.addEventListener("pointercancel", (e) => { if (mine(e)) { current.cancel(); settle(); } }, opts);
+      btn.addEventListener("lostpointercapture", (e) => { if (mine(e)) { current.cancel(); settle(); } }, opts);
+      window.addEventListener("blur", () => { current.cancel(); settle(); }, opts);
     }, { passive: false });
 
     window.addEventListener('message', (e) => {
@@ -161,13 +315,40 @@
       }
     }, { passive: true });
 
-    return { setIcon, host };
+    // ── One-time "what's new" notice ──────────────────────────────────────
+    const notice = $('#notice');
+    let noticeDone = null;
+    function hideNotice() {
+      if (notice.hidden) return;
+      notice.hidden = true;
+      shell.classList.remove('notice-open');
+      const done = noticeDone; noticeDone = null;
+      done?.();
+    }
+    function showNotice(onDone) {
+      const r = host.getBoundingClientRect();
+      notice.classList.toggle('down', r.top < window.innerHeight / 2);
+      const toLeft = r.left > window.innerWidth / 2;
+      notice.classList.toggle('left', toLeft);
+      notice.classList.toggle('right', !toLeft);
+      noticeDone = onDone;
+      notice.hidden = false;
+      shell.classList.add('notice-open');
+    }
+    $('#notice-on').addEventListener('click', () => {
+      try { chrome.storage.sync.set({ [NOTICE.feature]: true }); } catch {}
+      hideNotice();
+    });
+    $('#notice-later').addEventListener('click', hideNotice);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideNotice(); }, true);
+
+    return { setIcon, host, showNotice };
   }
 
-  function maybeShowPromoModal() {
+  function maybeShowPromoModal(onDone) {
     const PROMO_KEY = "st_dark_promo_dismissed";
     chrome.storage.local.get(PROMO_KEY, (res) => {
-      if (res && res[PROMO_KEY]) return;
+      if (res && res[PROMO_KEY]) { onDone?.(); return; }
       const overlay = document.createElement("div");
       overlay.id = "st-dark-promo-overlay";
       overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:2147483646`;
@@ -213,6 +394,7 @@
       btn.addEventListener("click", () => {
         if (cb.checked) chrome.storage.local.set({ [PROMO_KEY]: true });
         overlay.remove();
+        onDone?.();
       });
       overlay.addEventListener("click", (e) => { if (e.target === overlay) btn.click(); });
 
@@ -223,6 +405,27 @@
     });
   }
 
+  // Shown in the top frame only, never on print pages, never on top of the promo,
+  // and never to someone who already turned Beautify on.
+  function maybeShowBeautifyNotice() {
+    if (window.top !== window || !overlay?.showNotice) return;
+    if (/\/app\/api\/.*\/print\/|\/(?:Invoice|Estimate)\/Print\/|[?&]print=true\b/i.test(location.pathname + location.search + location.hash)) return;
+    try {
+      chrome.storage.sync.get([NOTICE.seenKey, NOTICE.feature], (sync) => {
+        if (sync?.[NOTICE.seenKey] || sync?.[NOTICE.feature] === true) return;
+        chrome.storage.local.get(NOTICE.countKey, (local) => {
+          const shown = Number(local?.[NOTICE.countKey]) || 0;
+          if (shown >= NOTICE.maxShows) return;
+          // Let ServiceTitan finish loading before it appears.
+          setTimeout(() => {
+            try { chrome.storage.local.set({ [NOTICE.countKey]: shown + 1 }); } catch {}
+            overlay.showNotice(() => { try { chrome.storage.sync.set({ [NOTICE.seenKey]: true }); } catch {} });
+          }, 1500);
+        });
+      });
+    } catch {}
+  }
+
   let overlay;
   chrome.storage.sync.get(HOST_KEY, (res) => {
     const isEnabled = res[HOST_KEY] !== false;
@@ -230,7 +433,7 @@
     const post = (payload) => window.postMessage(Object.assign({ __st: true }, payload), "*");
     post({ type: "ST_DARK_SET", enabled: isEnabled });
     overlay.setIcon(isEnabled);
-    maybeShowPromoModal(); // first time opening ServiceTitan after install
+    maybeShowPromoModal(maybeShowBeautifyNotice); // promo first, then the one-time Beautify notice
   });
 
   chrome.runtime.onMessage.addListener((msg) => {
