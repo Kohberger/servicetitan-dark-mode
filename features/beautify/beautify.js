@@ -1,8 +1,8 @@
-// ISOLATED world, every frame. Global, opt-in De-uglify preference.
+// ISOLATED world, every frame. Global, opt-in Beautify preference.
 (() => {
   if (!/servicetitan/i.test(location.hostname)) return;
-  const KEY = 'st_feature_deuglify';
-  const ATTR = 'data-st-deuglify';
+  const KEY = 'st_feature_beautify';
+  const ATTR = 'data-st-beautify';
   if (/\/app\/api\/.*\/print\/|\/(?:Invoice|Estimate)\/Print\/|[?&]print=true\b/i.test(location.pathname + location.search + location.hash)) return;
   let on = false, revision = 0;
   const apply = () => {

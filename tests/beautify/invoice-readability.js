@@ -39,6 +39,57 @@
     check('Outside click closes actions', toggle.getAttribute('aria-expanded') === 'false');
     check('Six requested metadata fields hidden', root.querySelectorAll('[data-st-invoice-meta-hidden]').length === 6 && [...root.querySelectorAll('[data-st-invoice-meta-hidden]')].every(el => getComputedStyle(el).display === 'none'));
     check('Useful metadata stays visible', [...root.querySelectorAll('.attributes > li')].filter(el => el.getClientRects().length).length === 5);
+    const details = root.querySelector('.st-invoice-details-panel');
+    const detailItems = [...(details?.querySelectorAll('.st-invoice-details-item') || [])];
+    const sidebar = root.querySelector(':scope > div > .row:last-child > .span3');
+    const panelBox = details.getBoundingClientRect(), sideBox = sidebar.getBoundingClientRect();
+    check('Details panel tops the main column, above Job Summary', details.parentElement.matches('.span9') && details === details.parentElement.firstElementChild && !!details.nextElementSibling?.querySelector('.invoice-details-view') && panelBox.bottom <= root.querySelector('.invoice-details-view').getBoundingClientRect().top);
+    check('Details panel sits beside the sidebar', innerWidth <= 1100 || (panelBox.left >= sideBox.right && panelBox.top < sideBox.bottom && sideBox.top < panelBox.bottom));
+    check('Details panel has a title and no subtitle', details.querySelector('h2')?.textContent === 'Posting & Status' && !details.querySelector('.st-invoice-details-heading p'));
+    check('Details panel shows the hidden fields in order', detailItems.map(i => i.querySelector('dt').textContent).join('|') === 'Invoice Date|Post Date|Batch|Review Status|Period Status|Export Status');
+    check('Details panel values match the native fields', detailItems.map(i => i.querySelector('dd').textContent).join('|') === '9/23/2026|9/23/2026|Sample Batch|Needs Review|Open|Pending');
+    check('Details panel statuses are tinted tags', [...details.querySelectorAll('.st-invoice-badge')].map(b => b.dataset.tone).join('|') === 'warning|info|warning');
+    check('Details panel shows one label and value per row', getComputedStyle(details.querySelector('.st-invoice-details-list')).gridTemplateColumns.split(' ').length === 1 && detailItems.every((item, i) => i === 0 || item.getBoundingClientRect().top >= detailItems[i - 1].getBoundingClientRect().bottom - 1));
+    const jobDetails = root.querySelector('.invoice-details-view > table[data-st-invoice-titled]');
+    const jobTitle = jobDetails?.caption;
+    check('Job Details card has a title', jobTitle?.textContent === 'Job Details' && jobTitle.hasAttribute('data-st-invoice-generated'));
+    {
+      // All three cards: Posting & Status panel, Job Details, Pricing Details.
+      const box = el => el.getBoundingClientRect();
+      const style = el => getComputedStyle(el);
+      const textLeft = el => box(el).left + parseFloat(style(el).paddingLeft);
+      const same = (a, b) => Math.abs(a - b) < 1;
+      const priceTable = root.querySelector('[data-st-invoice-pricing]');
+      const firstPair = table => {
+        const label = [...table.querySelectorAll('td.caption')].find(c => c.getClientRects().length);
+        return { label, value: label.nextElementSibling };
+      };
+      // Height of one single-line label/value row, excluding its divider line.
+      const innerHeight = el => box(el).height - parseFloat(style(el).borderTopWidth) - parseFloat(style(el).borderBottomWidth);
+      const oneLineRow = table => [...table.querySelectorAll('td.caption')].find(c => c.getClientRects().length && !c.nextElementSibling?.querySelector('br') && c.nextElementSibling?.getClientRects().length === 1);
+      const cards = [
+        { name: 'Posting & Status', card: details, title: details.querySelector('.st-invoice-details-heading'), titleText: details.querySelector('h2'),
+          label: details.querySelector('dt'), value: details.querySelector('dd'), row: details.querySelector('.st-invoice-details-item') },
+        { name: 'Job Details', card: jobDetails, title: jobTitle, titleText: jobTitle, ...firstPair(jobDetails), row: oneLineRow(jobDetails) },
+        { name: 'Pricing Details', card: priceTable, title: priceTable.caption, titleText: priceTable.caption, ...firstPair(priceTable), row: oneLineRow(priceTable) },
+      ];
+      const [ref, ...rest] = cards;
+      const matches = (fn) => rest.every(c => fn(ref, c));
+      check('All cards have Title Case titles', cards.map(c => c.titleText.textContent).join('|') === 'Posting & Status|Job Details|Pricing Details');
+      check('All cards share the same outline', matches((a, b) => ['borderTopWidth', 'borderTopColor', 'borderTopLeftRadius', 'backgroundColor'].every(k => style(a.card)[k] === style(b.card)[k]) && same(box(a.card).left, box(b.card).left) && same(box(a.card).width, box(b.card).width)));
+      check('All cards share title position, size and band', matches((a, b) => same(textLeft(a.title), textLeft(b.title)) && same(box(a.title).height, box(b.title).height) && ['fontSize', 'lineHeight', 'fontWeight', 'color'].every(k => style(a.titleText)[k] === style(b.titleText)[k]) && style(a.title).borderBottomColor === style(b.title).borderBottomColor));
+      check('All cards put labels and values in the same columns', matches((a, b) => same(textLeft(a.label), textLeft(b.label)) && same(textLeft(a.value), textLeft(b.value))));
+      check('All cards share label style and colour', matches((a, b) => ['fontSize', 'lineHeight', 'fontWeight', 'color'].every(k => style(a.label)[k] === style(b.label)[k])));
+      check('All cards share value style and colour', matches((a, b) => ['fontSize', 'lineHeight', 'color'].every(k => style(a.value)[k] === style(b.value)[k]) && style(b.value).textAlign === 'left'));
+      check('All cards use the same single-line row height', matches((a, b) => !!b.row && same(innerHeight(a.row), innerHeight(b.row))));
+    }
+    const exportLi = [...root.querySelectorAll('.attributes > li')].find(li => li.querySelector('label')?.textContent === 'Export Status');
+    const exportText = exportLi.firstChild;
+    exportText.textContent = 'Exported';
+    await wait();
+    check('Details panel follows native value changes', details.isConnected && [...details.querySelectorAll('.st-invoice-details-item')].find(i => i.querySelector('dt').textContent === 'Export Status')?.querySelector('.st-invoice-badge')?.dataset.tone === 'success');
+    exportText.textContent = 'Pending';
+    await wait();
     const detailRows = [...root.querySelectorAll('.invoice-details-view tr')].filter(r => r.getClientRects().length);
     check('Every detail label shares a line only with its value', detailRows.every(row => [...row.querySelectorAll('td.caption')].every(label => {
       const value = label.nextElementSibling;
@@ -52,20 +103,21 @@
     check('Empty spacers hidden; native hidden row stays hidden', root.querySelectorAll('[data-st-invoice-spacer]').length === 2 && !root.querySelector('#hidden-detail').getClientRects().length);
     check('Description values align left', [...root.querySelectorAll('[data-st-invoice-descriptions] td')].every(c => getComputedStyle(c).textAlign === 'left'));
     const pricing = root.querySelector('[data-st-invoice-pricing]');
-    check('Pricing has its own named table', pricing?.caption.textContent === 'Pricing details' && !pricing.textContent.includes('Invoice Summary'));
+    check('Pricing has its own named table', pricing?.caption.textContent === 'Pricing Details' && !pricing.textContent.includes('Invoice Summary'));
     const descriptions = root.querySelector('[data-st-invoice-descriptions]');
     const pr = pricing.getBoundingClientRect(), dr = descriptions.getBoundingClientRect();
     check('Pricing and descriptions share width and alignment', Math.abs(pr.width - dr.width) < 1 && Math.abs(pr.left - dr.left) < 1);
     const values = [...pricing.querySelectorAll('td[data-st-invoice-number]')];
     check('All pricing amounts use consistent size and background', values.every(c => getComputedStyle(c).fontSize === '14px' && getComputedStyle(c).backgroundColor === 'rgba(0, 0, 0, 0)'));
-    check('Total and Balance have identical semantic emphasis', pricing.querySelectorAll('[data-st-invoice-total]').length === 4 && [...pricing.querySelectorAll('[data-st-invoice-total]')].every(c => getComputedStyle(c).fontWeight === '650'));
-    check('Pricing values align right', [...pricing.querySelectorAll('td:not(.caption):not([data-st-invoice-spacer])')].every(c => getComputedStyle(c).textAlign === 'right'));
+    const totals = [...pricing.querySelectorAll('[data-st-invoice-total]')];
+    check('Total and Balance amounts are bold; their labels match other labels', totals.length === 4 && totals.filter(c => !c.classList.contains('caption')).every(c => getComputedStyle(c).fontWeight === '650') && totals.filter(c => c.classList.contains('caption')).every(c => getComputedStyle(c).fontWeight === '500'));
+    check('Pricing values start in the shared value column', [...pricing.querySelectorAll('td:not(.caption):not([data-st-invoice-spacer])')].every(c => getComputedStyle(c).textAlign === 'left' && getComputedStyle(c).fontVariantNumeric === 'tabular-nums'));
     check('Pricing keeps complete virtual binding range', [...pricing.tBodies[0].childNodes].filter(n => n.nodeType === 8).map(n => n.textContent.trim()).join('|') === 'ko if: ShowPaymentDue|/ko');
     const addedTax = document.createElement('tr');
     addedTax.innerHTML = '<td class="caption">Additional tax</td><td data-bind="text: accounting.formatMoney(Tax)">$2.00</td>';
     pricing.tBodies[0].insertBefore(addedTax, pricing.tBodies[0].lastElementChild);
     await wait();
-    check('Dynamic pricing rows get numeric styling', addedTax.cells[1].hasAttribute('data-st-invoice-number') && getComputedStyle(addedTax.cells[1]).textAlign === 'right');
+    check('Dynamic pricing rows get numeric styling', addedTax.cells[1].hasAttribute('data-st-invoice-number') && getComputedStyle(addedTax.cells[1]).fontVariantNumeric === 'tabular-nums');
     addedTax.remove();
     const moneyNode = pricing.querySelector('[data-st-invoice-number]');
     window.dispatchEvent(new Event('beforeprint'));

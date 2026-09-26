@@ -60,14 +60,14 @@
         "*://*.servicetitan.com/*"
       ],
       "js": [
-        "features/deuglify/deuglify.js",
-        "features/deuglify/runtime.js",
-        "features/deuglify/invoice-header.js",
-        "features/deuglify/invoice.js",
-        "features/deuglify/job-audit.js"
+        "features/beautify/beautify.js",
+        "features/beautify/runtime.js",
+        "features/beautify/invoice-header.js",
+        "features/beautify/invoice.js",
+        "features/beautify/job-audit.js"
       ],
       "css": [
-        "features/deuglify/deuglify.css"
+        "features/beautify/beautify.css"
       ],
       "run_at": "document_start",
       "all_frames": true,

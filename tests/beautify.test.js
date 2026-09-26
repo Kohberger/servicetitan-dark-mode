@@ -3,7 +3,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const source = name => readFileSync(path.join(__dirname, '../features/deuglify/', name), 'utf8');
+const source = name => readFileSync(path.join(__dirname, '../features/beautify/', name), 'utf8');
 
 function harness(initialFlag = false) {
   let on = initialFlag;
@@ -20,7 +20,7 @@ function harness(initialFlag = false) {
     MutationObserver: class { constructor(fn) { this.fn = fn; observers.push(this); } observe(target, options) { this.options = options; } disconnect() {} }
   });
   const flush = () => { for (const [key, fn] of [...timers]) { timers.delete(key); fn(); } };
-  return { api: window.__ST_DEUGLIFY__, location, intervals, listeners, flush,
+  return { api: window.__ST_BEAUTIFY__, location, intervals, listeners, flush,
     flag(value) { on = value; observers.find(o => o.options?.attributeFilter)?.fn(); flush(); },
     dom() { observers.find(o => o.options?.childList)?.fn([{ addedNodes: [{ nodeType: 1 }], removedNodes: [] }]); flush(); },
     route(hash) { location.hash = hash; location.href = 'https://go.servicetitan.com/' + hash; for (const fn of intervals.values()) fn(); flush(); }
@@ -59,21 +59,21 @@ test('print endpoints never mount even with a previously enabled flag', () => {
 test('storage changes win over stale initialization and missing document root is handled', () => {
   let callback, changed, ready, attr = null;
   const document = { documentElement: null };
-  vm.runInNewContext(source('deuglify.js'), {
+  vm.runInNewContext(source('beautify.js'), {
     location: { hostname: 'go.servicetitan.com', pathname: '/', search: '', hash: '' }, document,
     chrome: { storage: { sync: { get: (_, fn) => callback = fn }, onChanged: { addListener: fn => changed = fn } } },
     MutationObserver: class { constructor(fn) { ready = fn; } observe() {} disconnect() {} }
   });
-  changed({ st_feature_deuglify: { newValue: true } }, 'sync');
-  callback({ st_feature_deuglify: false });
+  changed({ st_feature_beautify: { newValue: true } }, 'sync');
+  callback({ st_feature_beautify: false });
   document.documentElement = { setAttribute: (_, val) => attr = val, removeAttribute: () => attr = null };
   ready(); assert.equal(attr, 'on');
-  changed({ st_feature_deuglify: { newValue: false } }, 'sync'); assert.equal(attr, null);
+  changed({ st_feature_beautify: { newValue: false } }, 'sync'); assert.equal(attr, null);
 });
 
 test('manifest keeps isolated all-frame feature scripts and no added permissions', () => {
   const manifest = JSON.parse(readFileSync(path.join(__dirname, '../manifest.json')));
-  const entry = manifest.content_scripts.find(e => e.js.includes('features/deuglify/runtime.js'));
+  const entry = manifest.content_scripts.find(e => e.js.includes('features/beautify/runtime.js'));
   assert.equal(entry.all_frames, true); assert.equal(entry.run_at, 'document_start');
   assert.notEqual(entry.world, 'MAIN');
   for (const file of entry.js) assert.doesNotThrow(() => new vm.Script(readFileSync(path.join(__dirname, '..', file), 'utf8')));
@@ -82,14 +82,37 @@ test('manifest keeps isolated all-frame feature scripts and no added permissions
 });
 
 test('every stylesheet selector is explicitly gated, including nested media rules', () => {
-  const css = source('deuglify.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const css = source('beautify.css').replace(/\/\*[\s\S]*?\*\//g, '');
   let rules = 0;
   for (const match of css.matchAll(/(?:^|(?<=[{}]))\s*([^{}]+)\{/g)) {
     const prelude = match[1].trim();
     if (prelude.startsWith('@')) continue;
-    for (const selector of prelude.split(',\n')) assert.ok(selector.trim().startsWith('html[data-st-deuglify="on"] '), selector);
+    for (const selector of prelude.split(',\n')) assert.ok(selector.trim().startsWith('html[data-st-beautify="on"] '), selector);
     rules++;
   }
   assert.ok(rules > 150);
   assert.ok(css.trim().startsWith('@media screen {'));
+});
+
+test('details panel status colours: negative wording wins, unknown stays neutral', () => {
+  const window = {};
+  vm.runInNewContext(source('invoice-header.js'), { window });
+  const tone = window.__ST_BEAUTIFY_INVOICE_HEADER__.tone;
+  const cases = {
+    '': 'none',
+    'Pending': 'warning', 'Needs Review': 'warning', 'Not Exported': 'warning', 'Not Reviewed': 'warning',
+    'Unreviewed': 'warning', 'On Hold': 'warning', 'Draft': 'warning',
+    'Exported': 'success', 'Posted': 'success', 'Reviewed': 'success', 'Approved': 'success', 'Closed': 'success', 'Completed': 'success',
+    'Open': 'info',
+    'Export Failed': 'danger', 'Error': 'danger', 'Rejected': 'danger', 'Voided': 'danger',
+    'Partially Exported': 'neutral', 'Something new': 'neutral',
+  };
+  for (const [value, expected] of Object.entries(cases)) assert.equal(tone(value), expected, JSON.stringify(value));
+});
+
+test('details panel lists every field hidden from the header strip', () => {
+  const header = source('invoice-header.js');
+  const fields = JSON.parse(header.match(/const PANEL_FIELDS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+  assert.deepEqual(fields, ['invoice date', 'post date', 'batch', 'batch info', 'review status', 'period status', 'export status']);
+  assert.match(header, /const HIDE = new Set\(PANEL_FIELDS\)/);
 });

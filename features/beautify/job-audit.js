@@ -1,6 +1,6 @@
 /* Activity digest: decorate native audit rows without moving binding-owned nodes. */
 (() => {
-  const suite = window.__ST_DEUGLIFY__;
+  const suite = window.__ST_BEAUTIFY__;
   if (!suite) return;
 
   suite.register({

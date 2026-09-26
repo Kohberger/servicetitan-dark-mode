@@ -1,10 +1,10 @@
 /* Isolated-world lifecycle. Never patch the application's history or globals. */
 (() => {
-  if (window.__ST_DEUGLIFY__) return;
+  if (window.__ST_BEAUTIFY__) return;
   const modules = new Map();
   let timer, navigationTimer, printing = false;
   let lastURL = location.href;
-  const enabled = () => !printing && document.documentElement?.getAttribute('data-st-deuglify') === 'on' &&
+  const enabled = () => !printing && document.documentElement?.getAttribute('data-st-beautify') === 'on' &&
     !/\/app\/api\/.*\/print\/|\/(?:Invoice|Estimate)\/Print\/|[?&]print=true\b/i.test(location.pathname + location.search + location.hash);
 
   function sync() {
@@ -32,7 +32,7 @@
     navigationTimer = undefined;
     // pushState in MAIN world is not observable by patching isolated history.
     // Compare only the URL while enabled; DOM scans occur only on changes.
-    if (document.documentElement?.getAttribute('data-st-deuglify') === 'on') {
+    if (document.documentElement?.getAttribute('data-st-beautify') === 'on') {
       lastURL = location.href;
       navigationTimer = setInterval(() => {
         if (lastURL !== location.href) { lastURL = location.href; sync(); }
@@ -40,7 +40,7 @@
     }
     sync();
   }
-  window.__ST_DEUGLIFY__ = {
+  window.__ST_BEAUTIFY__ = {
     register(module) {
       if (modules.has(module.id)) return;
       modules.set(module.id, { module, root: null, dispose: null, status: 'inactive' });
@@ -58,7 +58,7 @@
     if (!document.documentElement || html === document.documentElement) return;
     html = document.documentElement;
     flagObserver.disconnect();
-    flagObserver.observe(html, { attributes: true, attributeFilter: ['data-st-deuglify'] });
+    flagObserver.observe(html, { attributes: true, attributeFilter: ['data-st-beautify'] });
     flagChanged();
   }
   new MutationObserver(records => {

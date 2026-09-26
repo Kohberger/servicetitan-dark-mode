@@ -1,10 +1,42 @@
 /* Compact header using native controls in place, with secondary-link delegates.
    Never move nodes across Knockout's virtual binding/comment boundaries. */
 (() => {
-  const HIDE = new Set(['batch', 'batch info', 'review status', 'period status', 'export status', 'post date', 'invoice date']);
+  // Header fields moved out of the header strip into the details panel, in panel order.
+  const PANEL_FIELDS = ['invoice date', 'post date', 'batch', 'batch info', 'review status', 'period status', 'export status'];
+  const HIDE = new Set(PANEL_FIELDS);
   const clean = text => text.replace(/[\uE000-\uF8FF]/g, '').replace(/\s+/g, ' ').trim();
 
-  window.__ST_DEUGLIFY_INVOICE_HEADER__ = root => {
+  // Colour hint for a status value. Negative wording is checked first so
+  // "Not Exported" never reads as done.
+  function tone(value) {
+    const v = value.toLowerCase();
+    if (!v) return 'none';
+    if (/error|fail|reject|void/.test(v)) return 'danger';
+    if (/^not\b|\bnot\s|pending|needs|unreviewed|required|hold|draft/.test(v)) return 'warning';
+    if (/^(exported|posted|reviewed|approved|complete(d)?|closed|synced)$/.test(v)) return 'success';
+    if (/^open$/.test(v)) return 'info';
+    return 'neutral';
+  }
+
+  // Label, value and (optional) link of a native header field, read without
+  // touching its bound nodes.
+  function readField(li) {
+    const label = clean(li.querySelector(':scope > label')?.textContent || '');
+    const value = clean([...li.childNodes]
+      .filter(n => !(n.nodeType === 1 && (n.matches('label') || n.matches('i:first-child'))))
+      .map(n => n.textContent).join(' '));
+    const link = li.querySelector('a');
+    let href = '';
+    if (link?.hasAttribute('href')) {
+      try {
+        const url = new URL(link.getAttribute('href'), location.href);
+        if (/^https?:$/.test(url.protocol)) href = url.href;
+      } catch {}
+    }
+    return { label, key: label.toLowerCase(), value, link, href };
+  }
+
+  const mountHeader = root => {
     const titleRow = root.querySelector(':scope > div > .row.m-b-1');
     const slot = titleRow?.querySelector(':scope > .span7');
     const panel = slot?.querySelector(':scope > .dropdown');
@@ -39,6 +71,88 @@
     root.removeAttribute('data-st-invoice-actions-open');
     let disposed = false;
     let timer;
+
+    // Details panel: the fields hidden from the header strip, shown as a panel at
+    // the top of the main column (beside the action sidebar, above Job Summary).
+    // Values are copied as text; links
+    // are re-created (http/https only) or delegated to the native link.
+    const meta = root.querySelector(':scope > div > .attributes');
+    const details = document.createElement('section');
+    details.className = 'st-invoice-details-panel';
+    details.setAttribute('data-st-invoice-generated', '');
+    details.setAttribute('aria-labelledby', `${panelId}-details-title`);
+    const detailsHeading = document.createElement('div');
+    detailsHeading.className = 'st-invoice-details-heading';
+    const detailsTitle = document.createElement('h2');
+    detailsTitle.id = `${panelId}-details-title`;
+    detailsTitle.textContent = 'Posting & Status';
+    detailsHeading.append(detailsTitle);
+    const detailsList = document.createElement('dl');
+    detailsList.className = 'st-invoice-details-list';
+    details.append(detailsHeading, detailsList);
+    let detailsSignature = '';
+
+    function nativeLink(key) {
+      for (const li of meta?.querySelectorAll(':scope > li') || []) {
+        if (readField(li).key === key) return li.querySelector('a');
+      }
+      return null;
+    }
+    function renderItem(field) {
+      const kind = /date$/.test(field.key) ? 'date' : /status$/.test(field.key) ? 'status' : 'text';
+      const item = document.createElement('div');
+      item.className = 'st-invoice-details-item';
+      item.setAttribute('data-kind', kind);
+      const dt = document.createElement('dt');
+      dt.textContent = field.label;
+      const dd = document.createElement('dd');
+      if (!field.value) {
+        dd.setAttribute('data-empty', '');
+        dd.textContent = '—';
+      } else if (kind === 'status') {
+        const badge = document.createElement('span');
+        badge.className = 'st-invoice-badge';
+        badge.setAttribute('data-tone', tone(field.value));
+        badge.textContent = field.value;
+        dd.append(badge);
+      } else if (field.href) {
+        const a = document.createElement('a');
+        a.href = field.href;
+        a.textContent = field.value;
+        dd.append(a);
+      } else if (field.link) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'st-invoice-details-link';
+        button.textContent = field.value;
+        button.addEventListener('click', () => nativeLink(field.key)?.click(), options);
+        dd.append(button);
+      } else {
+        dd.textContent = field.value;
+      }
+      item.append(dt, dd);
+      return item;
+    }
+    function renderDetails() {
+      const fields = [];
+      for (const li of meta?.querySelectorAll(':scope > li') || []) {
+        const field = readField(li);
+        if (!HIDE.has(field.key) || li.hidden || li.style.display === 'none') continue;
+        fields.push(field);
+      }
+      fields.sort((a, b) => PANEL_FIELDS.indexOf(a.key) - PANEL_FIELDS.indexOf(b.key));
+      const signature = JSON.stringify(fields.map(f => [f.label, f.value, f.href, !!f.link]));
+      if (signature !== detailsSignature) {
+        detailsSignature = signature;
+        detailsList.replaceChildren(...fields.map(renderItem));
+      }
+      if (!fields.length) details.remove();
+      else if (!details.isConnected) {
+        // Main column when present; otherwise directly under the header fields.
+        const column = root.querySelector(':scope > div > .row:last-child > .span9');
+        if (column) column.prepend(details); else meta.after(details);
+      }
+    }
 
     function setOpen(open, focusToggle = false) {
       root.toggleAttribute('data-st-invoice-actions-open', open);
@@ -88,6 +202,7 @@
         const label = clean(li.querySelector('label')?.textContent || '').toLowerCase();
         li.toggleAttribute('data-st-invoice-meta-hidden', HIDE.has(label));
       }
+      renderDetails();
       const sources = [...primary.children];
       for (const [source, proxy] of proxies) {
         if (!sources.includes(source)) { proxy.remove(); proxies.delete(source); }
@@ -131,16 +246,17 @@
       if (records.some(r => !r.target.closest?.('[data-st-invoice-generated]'))) schedule();
     });
     observer.observe(primary, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'style', 'disabled', 'aria-disabled', 'hidden'] });
-    const meta = root.querySelector(':scope > div > .attributes');
-    if (meta) observer.observe(meta, { childList: true, subtree: true, characterData: true });
+    if (meta) observer.observe(meta, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style', 'hidden', 'href'] });
     update();
     return () => {
       disposed = true; clearTimeout(timer); observer.disconnect(); abort.abort();
-      toggle.remove(); links.remove();
+      toggle.remove(); links.remove(); details.remove();
       if (!originalId && panel.id === panelId) panel.removeAttribute('id');
       for (const el of [root, panel, ...primary.children, ...root.querySelectorAll('[data-st-invoice-meta-hidden]')]) {
         for (const attr of ['data-st-invoice-header','data-st-invoice-actions-open','data-st-invoice-actions-panel','data-st-invoice-primary','data-st-invoice-secondary','data-st-invoice-meta-hidden']) el.removeAttribute(attr);
       }
     };
   };
+  mountHeader.tone = tone; // exposed for tests/beautify.test.js
+  window.__ST_BEAUTIFY_INVOICE_HEADER__ = mountHeader;
 })();
