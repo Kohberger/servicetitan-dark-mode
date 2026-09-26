@@ -64,10 +64,12 @@
         "features/beautify/runtime.js",
         "features/beautify/invoice-header.js",
         "features/beautify/invoice.js",
-        "features/beautify/job-audit.js"
+        "features/beautify/job-audit.js",
+        "features/beautify/batching.js"
       ],
       "css": [
-        "features/beautify/beautify.css"
+        "features/beautify/beautify.css",
+        "features/beautify/batching.css"
       ],
       "run_at": "document_start",
       "all_frames": true,
