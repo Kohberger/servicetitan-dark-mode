@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Release zips are build output. Attach them to a GitHub Release instead of committing them.
+dist/
+*.zip
+
+# Editors
+.vscode/
+.idea/
+*.swp
