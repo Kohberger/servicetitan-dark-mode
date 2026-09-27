@@ -95,7 +95,7 @@ test('manifest keeps isolated all-frame feature scripts and no added permissions
 });
 
 test('every stylesheet selector is explicitly gated, including nested media rules', () => {
-  for (const filename of ['beautify.css', 'invoice-email.css']) {
+  for (const filename of ['beautify.css', 'invoice-email.css', 'customer-summary.css']) {
     const css = source(filename).replace(/\/\*[\s\S]*?\*\//g, '');
     let rules = 0;
     for (const match of css.matchAll(/(?:^|(?<=[{}]))\s*([^{}]+)\{/g)) {
@@ -104,7 +104,7 @@ test('every stylesheet selector is explicitly gated, including nested media rule
       for (const selector of prelude.split(',\n')) assert.ok(/^html\[data-st-beautify="on"\](?:\s|:has\(form\[data-st-email-ui\]\)\s*$)/.test(selector.trim()), selector);
       rules++;
     }
-    assert.ok(rules > (filename === 'beautify.css' ? 150 : 30));
+    assert.ok(rules > (filename === 'beautify.css' ? 150 : filename === 'customer-summary.css' ? 20 : 30));
     assert.ok(css.trim().startsWith('@media screen {'));
   }
 });

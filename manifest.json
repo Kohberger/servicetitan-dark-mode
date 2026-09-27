@@ -72,7 +72,8 @@
       "css": [
         "features/beautify/beautify.css",
         "features/beautify/batching.css",
-        "features/beautify/invoice-email.css"
+        "features/beautify/invoice-email.css",
+        "features/beautify/customer-summary.css"
       ],
       "run_at": "document_start",
       "all_frames": true,
