@@ -300,6 +300,7 @@ html[data-st-beautify="on"] .invoice-job-view[data-st-invoice-ui] h3[data-st-inv
 html[data-st-beautify="on"] .invoice-job-view[data-st-invoice-ui] h3[data-st-invoice-attribution] > span { margin-left: auto; font-weight: 400; }
 html[data-st-beautify="on"] .invoice-job-view[data-st-invoice-ui] h3[data-st-invoice-empty] { color: var(--sti-muted) !important; }
 html[data-st-beautify="on"] .invoice-job-view[data-st-invoice-ui] .st-invoice-empty-attribution { color: var(--sti-muted); }
+html[data-st-beautify="on"] .invoice-job-view[data-st-invoice-ui] h3[data-st-invoice-attribution-hidden] { display: none !important; }
 html[data-st-beautify="on"] .invoice-job-view[data-st-invoice-ui] [data-st-invoice-empty-value] {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip-path: inset(50%); white-space: nowrap;
