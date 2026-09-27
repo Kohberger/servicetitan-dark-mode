@@ -114,6 +114,7 @@
   }
   window.__ST_BEAUTIFY__?.register({
     id: 'job-contacts',
+    retainUntilRemoved: true,
     matches: url => /^#\/Job\/Index\/\d+/i.test(url.hash),
     findRoot: () => document.querySelector('.qa-customer-name')?.closest('.CardSection'),
     mount(root) {

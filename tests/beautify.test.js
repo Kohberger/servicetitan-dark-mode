@@ -131,3 +131,26 @@ test('details panel lists every field hidden from the header strip', () => {
   assert.deepEqual(fields, ['invoice date', 'post date', 'batch', 'batch info', 'review status', 'period status', 'export status']);
   assert.match(header, /const HIDE = new Set\(PANEL_FIELDS\)/);
 });
+
+test('job modules retain outgoing styles during invoice loading and still clean up on removal, disable, and print', () => {
+  for (const file of ['job-contacts.js', 'job-audit.js']) {
+    let module;
+    vm.runInNewContext(source(file), { window: { __ST_BEAUTIFY__: { register: value => { module = value; } } } });
+    const h = harness(true);
+    let root = { isConnected: true }, mounts = 0, cleans = 0;
+    h.route('#/Job/Index/1');
+    h.api.register({ ...module, findRoot: () => root, mount: () => { mounts++; return () => cleans++; } });
+    h.flush();
+    assert.equal(mounts, 1, file);
+    h.route('#/EditInvoice/2'); h.dom();
+    assert.equal(cleans, 0, `${file}: outgoing job must remain styled`);
+    root.isConnected = false; h.dom();
+    assert.equal(cleans, 1, `${file}: detached view must clean up`);
+    root = { isConnected: true }; h.route('#/Job/Index/3');
+    h.route('#/EditInvoice/4'); h.flag(false);
+    assert.equal(cleans, 2, `${file}: disabling overrides retention`);
+    h.route('#/Job/Index/5'); h.flag(true);
+    h.route('#/EditInvoice/6'); h.listeners.beforeprint();
+    assert.equal(cleans, 3, `${file}: printing overrides retention`);
+  }
+});

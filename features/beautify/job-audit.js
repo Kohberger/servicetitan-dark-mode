@@ -7,6 +7,7 @@
     id: 'job-audit-digest',
     name: 'Job activity digest',
     description: 'Readable notes, native filters, and expandable activity groups.',
+    retainUntilRemoved: true,
     matches: url => /^#\/Job\/Index\/\d+\/?(?:\?.*)?$/i.test(url.hash),
     // ServiceTitan only adds .job-history-tab-content when the tenant has the
     // InternalCommunicationEnabled feature on; other tenants render the same
