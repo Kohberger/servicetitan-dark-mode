@@ -32,7 +32,16 @@
       if (!groups.has(key)) groups.set(key, { name, title, scope, channels: [] });
       groups.get(key).channels.push({ source: a, href: a.getAttribute('href'), value: a.textContent.trim(), type: a.getAttribute('href').startsWith('tel:') ? 'Phone' : 'Email' });
     }
-    return [...groups.values()];
+    // ServiceTitan can repeat the same contact in both address columns. Only
+    // collapse complete matches: a shared name or phone alone is not identity.
+    const seen = new Set();
+    return [...groups.values()].filter(contact => {
+      const endpoints = [...new Set(contact.channels.map(ch => ch.href))].sort();
+      const key = JSON.stringify([contact.name, contact.title, endpoints]);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
   function avatar(contact) {
     const initials = contact.name === 'Unlabeled contact' ? '—' : contact.name.split(/\s+/).slice(0, 2).map(s => s[0]).join('');
