@@ -1,0 +1,45 @@
+/* Tailwind-inspired expandable contacts; light surfaces also pass through the
+   extension's existing global dark-mode filter. No remote assets or runtime. */
+@media screen {
+html[data-st-beautify="on"] [data-st-job-contacts] {
+  --jc-surface:#fff; --jc-soft:#f8fafc; --jc-line:#e2e8f0; --jc-ink:#172033; --jc-muted:#64748b; --jc-link:#334fc4;
+}
+html[data-st-beautify="on"] [data-st-job-contacts] :is(.qa-contact-mobilephone,.qa-contact-phone,.qa-contact-email) {display:none!important}
+html[data-st-beautify="on"] [data-st-job-contacts] > .Grid {display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:20px!important;width:100%!important;margin:0!important}
+html[data-st-beautify="on"] [data-st-job-contacts] > .Grid > .GridColumn {width:auto!important;max-width:none!important;margin:0!important;box-sizing:border-box;padding:20px!important;border:1px solid var(--jc-line);border-radius:12px;background:var(--jc-soft);min-width:0}
+html[data-st-beautify="on"] [data-st-job-contacts] :is(.qa-location-address,.qa-customer-address) a {white-space:pre-line;overflow-wrap:anywhere}
+html[data-st-beautify="on"] .stjc-contacts {font:14px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif;color:var(--jc-ink);text-align:left}
+html[data-st-beautify="on"] .stjc-contacts * {box-sizing:border-box}
+html[data-st-beautify="on"] .stjc-contacts [hidden] {display:none!important}
+html[data-st-beautify="on"] .stjc-contacts :is(h2,h3,h4,p) {margin:0;color:inherit;line-height:1.5}
+html[data-st-beautify="on"] .stjc-contacts h2 {color:var(--jc-ink)!important;font-size:18px;font-weight:650}
+html[data-st-beautify="on"] .stjc-muted {display:block;color:var(--jc-muted)!important;font-size:12px;font-weight:400}
+html[data-st-beautify="on"] .stjc-contacts {border-top:1px solid var(--jc-line);margin-top:24px;padding-top:20px}
+html[data-st-beautify="on"] .stjc-heading {display:flex;align-items:center;gap:14px;margin-bottom:18px}
+html[data-st-beautify="on"] .stjc-identity {display:flex;align-items:center;gap:12px;min-width:0}
+html[data-st-beautify="on"] .stjc-identity > div {min-width:0}
+html[data-st-beautify="on"] .stjc-identity strong {display:block;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+html[data-st-beautify="on"] .stjc-avatar {display:flex;align-items:center;justify-content:center;flex:0 0 38px;height:38px;border-radius:50%;background:#edf0f7;color:#53607b;font-size:12px;font-weight:600}
+html[data-st-beautify="on"] .stjc-channels {display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+html[data-st-beautify="on"] .stjc-contacts a {color:var(--jc-link)!important;font-size:13px;text-decoration:none;overflow-wrap:anywhere}
+html[data-st-beautify="on"] .stjc-contacts a:hover {text-decoration:underline}
+html[data-st-beautify="on"] .stjc-person {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:24px;padding:16px 0;border-bottom:1px solid var(--jc-line)}
+html[data-st-beautify="on"] .stjc-person:first-child {padding-top:0}
+html[data-st-beautify="on"] .stjc-button {border:1px solid var(--jc-line);border-radius:7px;background:var(--jc-surface);color:var(--jc-ink);font:500 12px/1.5 ui-sans-serif,system-ui,sans-serif;padding:8px 12px;cursor:pointer;box-shadow:0 1px 2px #00000005}
+html[data-st-beautify="on"] .stjc-button:hover {background:var(--jc-soft)}
+html[data-st-beautify="on"] .stjc-more {margin-top:14px}
+html[data-st-beautify="on"] .stjc-contacts .stjc-channel {
+  display:flex;align-items:center;gap:8px;width:fit-content;max-width:100%;
+  border:0!important;border-bottom:0!important;background-image:none!important;box-shadow:none!important;text-decoration:none!important;
+}
+html[data-st-beautify="on"] .stjc-contacts .stjc-channel::before,
+html[data-st-beautify="on"] .stjc-contacts .stjc-channel::after {content:none!important}
+html[data-st-beautify="on"] .stjc-contacts .stjc-channel:hover span {text-decoration:underline}
+html[data-st-beautify="on"] .stjc-channel-icon {width:15px;height:15px;flex:0 0 15px;color:var(--jc-muted)}
+html[data-st-beautify="on"] .stjc-channel span {min-width:0;overflow-wrap:anywhere}
+html[data-st-beautify="on"] .stjc-contacts :is(button,a):focus-visible {outline:2px solid #6366f1;outline-offset:3px}
+@media(max-width:750px) {
+html[data-st-beautify="on"] [data-st-job-contacts] > .Grid {grid-template-columns:1fr!important}
+html[data-st-beautify="on"] .stjc-person {grid-template-columns:1fr;gap:10px}
+}
+}

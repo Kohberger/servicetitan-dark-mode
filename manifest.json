@@ -67,13 +67,15 @@
         "features/beautify/invoice.js",
         "features/beautify/invoice-email.js",
         "features/beautify/job-audit.js",
-        "features/beautify/batching.js"
+        "features/beautify/batching.js",
+        "features/beautify/job-contacts.js"
       ],
       "css": [
         "features/beautify/beautify.css",
         "features/beautify/batching.css",
         "features/beautify/invoice-email.css",
-        "features/beautify/customer-summary.css"
+        "features/beautify/customer-summary.css",
+        "features/beautify/job-contacts.css"
       ],
       "run_at": "document_start",
       "all_frames": true,
