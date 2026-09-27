@@ -23,9 +23,9 @@
       // Equal memo labels are grouped for presentation only, within their source.
       // Unnamed endpoints remain separate; do not infer a primary contact or role.
       const label = /[\p{L}\p{N}]/u.test(memo) ? memo : 'Unlabeled contact';
-      // The native label exposes titles as "Name : Title". Split only when
-      // both parts contain text; leave other labels intact rather than guess.
-      const parts = label.match(/^([^:]+?)\s*:\s*(.+)$/);
+      // The native label exposes titles as "Name : Title", including a
+      // trailing separator when Title is empty. Never display that separator.
+      const parts = label.match(/^([^:]+?)\s*:\s*(.*)$/);
       const name = parts ? parts[1].trim() : label;
       const title = parts ? parts[2].trim() : '';
       const key = scope + ':' + (label === 'Unlabeled contact' ? a.getAttribute('href') : label);

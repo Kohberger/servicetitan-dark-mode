@@ -41,3 +41,14 @@ test('unnamed contacts deduplicate only when their endpoints match', () => {
   const result = read([row('location', '', 'tel:5550100'), row('billing', '', 'tel:5550100'), row('billing', '', 'tel:5550101')]);
   assert.equal(result.length, 2);
 });
+
+test('blank titles omit the trailing separator without losing names or real titles', () => {
+  for (const label of ['Alex Example :  \n', 'Alex Example:', 'Alex Example']) {
+    const [contact] = read([row('billing', label, 'mailto:alex@example.com')]);
+    assert.equal(contact.name, 'Alex Example');
+    assert.equal(contact.title, '');
+  }
+  const [contact] = read([row('billing', 'Alex Example : Manager', 'mailto:alex@example.com')]);
+  assert.equal(contact.name, 'Alex Example');
+  assert.equal(contact.title, 'Manager');
+});
