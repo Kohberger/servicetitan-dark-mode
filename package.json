@@ -4,6 +4,6 @@
   "description": "Dev-only scripts. The extension itself has no dependencies or build step.",
   "scripts": {
     "test": "node --test \"tests/**/*.test.js\"",
-    "check": "node --check engine.js && node --check content.js && node --check toggle-core.js && node --check background.js && node --check features/beautify/beautify.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\" && node --check features/beautify/runtime.js && node --check features/beautify/invoice-header.js && node --check features/beautify/invoice.js && node --check features/beautify/job-audit.js && node --check features/beautify/batching.js"
+    "check": "node --check engine.js && node --check content.js && node --check toggle-core.js && node --check background.js && node --check features/beautify/beautify.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\" && node --check features/beautify/runtime.js && node --check features/beautify/invoice-header.js && node --check features/beautify/invoice.js && node --check features/beautify/job-audit.js && node --check features/beautify/batching.js && node --check features/beautify/invoice-email.js && node --check features/beautify/email-recipients.js"
   }
 }

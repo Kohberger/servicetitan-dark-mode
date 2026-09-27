@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" data-st-beautify="on">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice email — synthetic fixture</title>
+<style>body{margin:0;background:#fafafa;font:14px Arial}#container{width:940px;margin:auto}.control-group{margin:20px}.control-label{float:left;width:160px}.controls{margin-left:180px}input,textarea{font:inherit}#results{white-space:pre-wrap}.toolbar{padding:16px}.checkbox{display:inline-block;margin-right:16px}.form-actions{padding:20px}.validation-message{display:none}html[data-st-dark="on"]{filter:invert(1) hue-rotate(180deg) contrast(.85)}</style>
+<link rel="stylesheet" href="../../features/beautify/invoice-email.css">
+<div class="toolbar"><button id="tests">Run email checks</button> <button id="dark">Toggle dark simulation</button> <button id="flag">Toggle Beautify</button><pre id="results"></pre></div>
+<div id="container"><form class="form-horizontal" data-bind="submit: $data.Send">
+<h3>Email Invoice</h3>
+<div class="control-group"><label class="control-label">Invoice Template</label><div class="controls"><select><option>Invoice</option><option>Invoice with payments</option></select></div></div>
+<div class="control-group"><label class="control-label">From</label><div class="controls"><span class="input-icon"><input type="text" name="SenderName" placeholder="Sender name" value="Example Plumbing"></span><span class="input-icon"><input name="From" type="text" placeholder="Sender email" value="office@example.com"></span></div></div>
+<div class="control-group"><label class="control-label">To</label><div class="controls"><!-- ko foreach: AvailableEmails --><label class="checkbox"><input type="checkbox" value="customer@example.com" data-bind="checked: $parent.SelectedEmails"><span>customer@example.com</span></label><!-- /ko --></div></div>
+<div class="control-group"><div class="controls input-icon"><input type="text" name="NewEmailAddress" placeholder="New email address ..."><span class="validation-message"></span></div><div class="controls save-email-address"><label class="checkbox"><input type="checkbox" name="SaveCustomerEmailAddress">Save to customer record</label><label class="checkbox"><input type="checkbox" name="SaveLocationEmailAddress">Save to location record</label></div></div>
+<div class="control-group"><label class="control-label">Subject</label><div class="controls input-icon"><input type="text" name="Subject" placeholder="Subject" value="Your invoice from Example Plumbing"></div></div>
+<div class="control-group"><div class="form-actions"><button type="button" class="btn">Generate with TI</button><a class="btn-link">Reset</a></div><br><label class="control-label">Body</label><div class="controls input-icon"><textarea name="Body" placeholder="Body" rows="8">Hello,
+
+Thank you for choosing Example Plumbing. Please find your invoice attached.
+
+If you have any questions, just reply to this email.
+
+Your team at Example Plumbing</textarea></div></div>
+<div class="control-group"><label class="control-label">Attachments</label><div class="controls"><button type="button" class="btn">Attach Files</button></div></div>
+<div class="control-group"><label class="control-label">Forms</label><div class="controls"><label class="checkbox"><input type="checkbox"><span>Completion certificate</span></label><label class="checkbox"><input type="checkbox"><span>Service finance certificate of completion</span></label></div></div>
+<div class="form-actions"><button class="btn btn-success" type="submit">Send</button><button type="button" class="btn">PDF Preview</button><a class="btn-link">Cancel</a></div>
+</form></div>
+<script src="invoice-email-fixture.js"></script>
+<script src="../../features/beautify/email-recipients.js"></script>
+<script src="../../features/beautify/runtime.js"></script>
+<script src="../../features/beautify/invoice-email.js"></script>
+<script src="invoice-email.js"></script>
+</html>

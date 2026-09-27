@@ -6,6 +6,7 @@
 
   window.__ST_BEAUTIFY__?.register({
     id: 'invoice-readability',
+    retainUntilRemoved: true,
     name: 'Invoice enhancements',
     description: 'Readable invoice details, pricing, tables, actions, and empty states.',
     matches: url => /^#\/(?:EditInvoice|Invoice)\/\d+\/?(?:\?.*)?$/i.test(url.hash) && !/[?&]print=true\b/i.test(url.search + url.hash) && !/\/(?:app\/api\/.*\/print|Invoice\/Print|Estimate\/Print)\//i.test(url.pathname || ''),

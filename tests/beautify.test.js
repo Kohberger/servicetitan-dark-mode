@@ -47,6 +47,19 @@ test('opt-in lifecycle, URL changes across worlds, root replacement, printing an
   h.api.register({ id: 'healthy', mount() { throw Error('duplicate'); } }); h.flush(); assert.equal(mounts, 6);
 });
 
+test('outgoing email presentation survives navigation until removal, but disable and print clean up', () => {
+  const h = harness(true); let root = { isConnected: true }, cleans = 0;
+  h.api.register({ id: 'email', matches: url => url.hash.startsWith('#/Invoice/'), retainUntilRemoved: true,
+    findRoot: () => root, mount: () => () => cleans++ });
+  h.flush();
+  h.route('#/Job/1'); h.dom(); assert.equal(cleans, 0);
+  root.isConnected = false; h.dom(); assert.equal(cleans, 1);
+  root = { isConnected: true }; h.dom(); assert.equal(h.api.status()[0].status, 'inactive');
+  h.route('#/Invoice/2'); h.route('#/Job/2'); h.flag(false); assert.equal(cleans, 2);
+  h.route('#/Invoice/3'); h.flag(true); h.route('#/Job/3');
+  h.listeners.beforeprint(); assert.equal(cleans, 3);
+});
+
 test('print endpoints never mount even with a previously enabled flag', () => {
   for (const pathname of ['/app/api/invoice/print/1', '/Invoice/Print/1', '/Estimate/Print/1']) {
     const h = harness(true); h.location.pathname = pathname;
@@ -82,16 +95,18 @@ test('manifest keeps isolated all-frame feature scripts and no added permissions
 });
 
 test('every stylesheet selector is explicitly gated, including nested media rules', () => {
-  const css = source('beautify.css').replace(/\/\*[\s\S]*?\*\//g, '');
-  let rules = 0;
-  for (const match of css.matchAll(/(?:^|(?<=[{}]))\s*([^{}]+)\{/g)) {
-    const prelude = match[1].trim();
-    if (prelude.startsWith('@')) continue;
-    for (const selector of prelude.split(',\n')) assert.ok(selector.trim().startsWith('html[data-st-beautify="on"] '), selector);
-    rules++;
+  for (const filename of ['beautify.css', 'invoice-email.css']) {
+    const css = source(filename).replace(/\/\*[\s\S]*?\*\//g, '');
+    let rules = 0;
+    for (const match of css.matchAll(/(?:^|(?<=[{}]))\s*([^{}]+)\{/g)) {
+      const prelude = match[1].trim();
+      if (prelude.startsWith('@')) continue;
+      for (const selector of prelude.split(',\n')) assert.ok(/^html\[data-st-beautify="on"\](?:\s|:has\(form\[data-st-email-ui\]\)\s*$)/.test(selector.trim()), selector);
+      rules++;
+    }
+    assert.ok(rules > (filename === 'beautify.css' ? 150 : 30));
+    assert.ok(css.trim().startsWith('@media screen {'));
   }
-  assert.ok(rules > 150);
-  assert.ok(css.trim().startsWith('@media screen {'));
 });
 
 test('details panel status colours: negative wording wins, unknown stays neutral', () => {
