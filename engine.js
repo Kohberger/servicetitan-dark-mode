@@ -69,19 +69,21 @@ html[data-st-dark="on"] body{
 html[data-st-dark="on"] :is(#app, #root, main, [data-anv="app-root"], .app-layout, .app-layout-main, .app-layout-content){
   background-color: #DAD7D6 !important;
 }
-/* ===== Dispatch board: restore original darker background ==================
+/* ===== Dispatch board: darker, cooler background ===========================
    The lighter global bg (#252829) looks too washed-out on the dense grid of
    the dispatch board. When data-st-dispatch="on" is stamped on <html> by the
-   route-watcher IIFE, fall back to the previous visible color #1F2122
-   (pre-inversion CSS value: #E0DEDD). The extra attribute raises specificity
-   above the general rule so no !important ordering games are needed.
+   route-watcher IIFE, use a deeper cool near-black: visible ~#16181A
+   (pre-inversion CSS value: #F7F9FC). v1.5 dispatch polish: this is the
+   canvas the board's rows (#1C1F22) and group bands (#24272B) sit on; see the
+   dispatch block in SHADOW_CSS. The extra attribute raises specificity above
+   the general rule so no !important ordering games are needed.
 =========================================================================== */
 html[data-st-dark="on"][data-st-dispatch="on"],
 html[data-st-dark="on"][data-st-dispatch="on"] body {
-  background-color: #E0DEDD !important;
+  background-color: #F7F9FC !important;
 }
 html[data-st-dark="on"][data-st-dispatch="on"] :is(#app, #root, main, [data-anv="app-root"], .app-layout, .app-layout-main, .app-layout-content) {
-  background-color: #E0DEDD !important;
+  background-color: #F7F9FC !important;
 }
 /* ===== Tag Types settings page: perfect swatch color reproduction ===========
    The CSS filter chain invert+hue-rotate+contrast is mathematically lossy for
@@ -397,14 +399,39 @@ html[data-st-dark="on"] [data-anv="card"][class*="job-tasks-card__"] :is(img, vi
       outer card so the stripe keeps its true color, and invert the content
       section again so the body goes dark like every other card. Chips inside
       still get their own counter-invert, so they keep their true colors.
+      v1.5: only when the card itself is counter-inverted, i.e. it carries an
+      inline status color that isn't a pale tint. In the Edit Appointment
+      drawer the .qa-appointment-card has no inline color and sits inside a
+      pale-tinted card, so re-inverting its section turned the form light
+      (black inputs, near-invisible labels).
 ============================================================================= */
 html[data-st-dark="on"]:has(.qa-header-job-name),
 html[data-st-dark="on"]:has(.qa-header-job-name) body,
 html[data-st-dark="on"]:has(.qa-header-job-name) :is(#app, #root, main, [data-anv="app-root"], .app-layout, .app-layout-main, .app-layout-content) {
   background-color: #FFFFFF !important;
 }
-html[data-st-dark="on"] .qa-appointment-card > .CardSection {
+html[data-st-dark="on"] .qa-appointment-card[style*="background-color"]:not([data-st-card-tint]) > .CardSection {
   filter: invert(1) hue-rotate(180deg) !important;
+}
+
+/* ===== Pale-tinted Anvil cards (job flyout, Edit Appointment drawer) ========
+   The job flyout and the Edit Appointment drawer (⋮ → Reschedule) wrap the
+   appointment in an Anvil Card whose inline background is a pale status tint
+   (Scheduled rgb(190,231,245), Dispatched rgb(241,237,255), Working
+   rgb(180,229,144), On Hold rgb(255,240,177)). The chip rule above treated
+   those like status chips and counter-inverted them, leaving a light island.
+   fixChips() marks Cards whose inline background has HSL lightness >= 70%
+   with data-st-card-tint and skips the counter-invert, so the html filter
+   darkens them like any other surface and the tint survives as a dark wash.
+   Mid-tone status colors (the job page's green appointment stripe,
+   rgb(24,167,97)) keep the counter-invert. The Edit Appointment drawer's
+   outer card (appointment-form-card) is always treated as a surface: its
+   color only shows as the left stripe, and the form sits on a nested card.
+   Same specificity as the chip rule, so this later rule wins.
+============================================================================= */
+html[data-st-dark="on"] [data-anvil-component][data-st-card-tint],
+html[data-st-dark="on"] [data-anvil-component="Card"][class*="appointment-form-card"] {
+  filter: none !important;
 }
 /* Breadcrumb bar on record pages (the Location page shows "Customer > Location").
    It's transparent, so the gray canvas showed through as a strip above an
@@ -546,6 +573,33 @@ html[data-st-dark="on"] [data-anv="combobox-item"] * {
 ============================================================================= */
 html[data-st-dark="on"] * {
   box-shadow: none !important;
+}
+/* v1.5: Anvil draws radio button circles as an inset box-shadow ring, so the
+   rule above erased them and only the checked dot (a ::before) was left, e.g.
+   Reports → Export → "Export Report" format choices. Inset rings don't cause
+   the white-glow problem, so put these back. Values mirror Anvil's own rules;
+   the unchecked ring uses --colorsBorderDefault instead of GreyStrong so it
+   stays visible on dark surfaces. */
+html[data-st-dark="on"] .Radio__box {
+  box-shadow: 0 0 0 1px var(--colorsBorderDefault, #949596) inset !important;
+}
+html[data-st-dark="on"] .a-Radio:not(.Radio--disabled):hover .Radio__box {
+  box-shadow: 0 0 0 1px var(--colorsBorderStrong, #6a6b6c) inset !important;
+}
+html[data-st-dark="on"] :is(.Radio--checked .Radio__box, .Radio__input:checked + .Radio__box) {
+  box-shadow: 0 0 0 2px var(--colorsBorderPrimary, #0265dc) inset !important;
+}
+html[data-st-dark="on"] .Radio--error .Radio__box {
+  box-shadow: 0 0 0 1px var(--colorsBorderCritical, #e13212) inset !important;
+}
+html[data-st-dark="on"] :is(.Radio--checked.Radio--error .Radio__box, .Radio--error .Radio__input:checked + .Radio__box) {
+  box-shadow: 0 0 0 2px var(--colorsBorderCritical, #e13212) inset !important;
+}
+html[data-st-dark="on"] :is(.Radio--checked:not(.Radio--disabled):hover .Radio__box, .a-Radio:not(.Radio--disabled):hover .Radio__input:checked + .Radio__box) {
+  box-shadow: 0 0 0 2px var(--colorsBorderPrimary, #0265dc) inset !important;
+}
+html[data-st-dark="on"] .a-Radio.Radio--focus-visible:focus-within .Radio__box {
+  box-shadow: 0 0 0 2px var(--colorsBorderPrimary, #0265dc) inset, 0 0 0 3px var(--colorsFocusRingPrimary, #a9d1ff) !important;
 }
 
 /* ===== Flyout / drawer backdrop =============================================
@@ -907,6 +961,78 @@ html[data-st-dark="on"] :is([data-anv="card"], [popover], :popover-open, [data-p
     :host-context(html[data-st-dark="on"]) :is([data-anv="card"], [popover], [class*="popover-container"]) svg[data-cy="zone-icon"] {
       filter: none !important;
     }
+
+    /* ===== v1.5: Dispatch board polish ======================================
+       The dark board mixed six unrelated grays with bright #DFDFDF job cards
+       and a light Jobs Tray header, and off-hours rendered lighter than
+       working hours. One cool palette instead (pre-inversion → visible):
+         canvas / gaps / timeline header  #F7F9FC → ~#16181A (main-doc rule)
+         tech labels + working shifts     #EDF1F5 → ~#1C1F22
+         group bands (Service, Sales…)    #E3E7EC → ~#24272B, #D3D8DD edges
+       Job cards (day view job-card-*, week and vertical base-card__*) are
+       counter-inverted, so their colors below are real colors. Every job
+       card gets the dark #1B2026 base from CSS alone, so a card the board
+       re-mounts while scrolling never shows its bright original color, not
+       even for a frame. Default gray cards (inline rgb(240,240,240)) keep a
+       neutral border. Cards with a status color then get a dark wash of their
+       own hue from --st-card-bg, which the dispatchDividerFix IIFE sets in
+       the same MutationObserver turn the card is added (before paint).
+       Tags and anything with its own inline color keep their colors; status
+       borders (e.g. the red alert outline) are left alone.
+       Scoped to data-st-dispatch="on". */
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [class*="header-row__"] {
+      background-color: #F7F9FC !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [class*="resource-label__"]:not([class*="resource-label-group__"]),
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [class*="color-segment__"].regular-shift {
+      background-color: #EDF1F5 !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [class*="resource-label-group__"],
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [class*="resource-row-group__"],
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [class*="team-row__"] {
+      background-color: #E3E7EC !important;
+      box-shadow: inset 0 1px 0 #D3D8DD, inset 0 -1px 0 #D3D8DD !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [data-anv="card"]:is([class*="job-card-"], [class*="base-card__"])[style*="background-color"] {
+      background-color: #1B2026 !important;
+      color: #F2F5F8 !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,.35) !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [data-anv="card"]:is([class*="job-card-"], [class*="base-card__"])[style*="background-color: rgb(240, 240, 240)"] {
+      border-color: #353C45 !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [data-anv="card"]:is([class*="job-card-"], [class*="base-card__"])[style*="background-color"][data-st-tinted] {
+      background-color: var(--st-card-bg, #1B2026) !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [data-anv="card"]:is([class*="job-card-"], [class*="base-card__"])[style*="background-color"] :is(div, span, p, button, svg):not(.Tag):not(.Tag *):not([style*="color:"]) {
+      color: #E9EDF1 !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [data-anv="card"]:is([class*="job-card-"], [class*="base-card__"])[style*="background-color"] span.fw-normal:not(.Tag):not(.Tag *):not([style*="color:"]) {
+      color: #AEB6C0 !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [data-anv="card"]:is([class*="job-card-"], [class*="base-card__"])[style*="background-color"][data-st-tinted] span.fw-normal:not(.Tag):not(.Tag *):not([style*="color:"]) {
+      color: #B8C0CA !important;
+    }
+    /* Vertical layout (Mobiscroll grid): same palette. Off-hours (.no-shift)
+       sit at canvas level, working hours one step lighter, as in the
+       horizontal board. */
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) :is(.mbsc-schedule-wrapper, .mbsc-schedule-grid-wrapper, .mbsc-schedule-color.no-shift) {
+      background-color: #F7F9FC !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) .mbsc-schedule-color.regular-shift {
+      background-color: #EDF1F5 !important;
+    }
+    /* Jobs Tray header is dark in light mode, so the html filter made it a
+       light bar. Counter-invert it back to dark. */
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) [data-cy="dc-jt-resize-handler"] {
+      filter: invert(1) hue-rotate(180deg) !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) :is(.k-grid, .k-grid-content, .k-grid-container, .k-grid-content tr) {
+      background-color: #EDF1F5 !important;
+    }
+    :host-context(html[data-st-dark="on"][data-st-dispatch="on"]) :is(.k-grid-header, .k-grid-header-wrap, .k-grid-header th) {
+      background-color: #E3E7EC !important;
+    }
   `;
   const shadowStyleCache = new WeakSet();
   function injectShadowStyle(root) {
@@ -1030,11 +1156,32 @@ html[data-st-dark="on"] :is([data-anv="card"], [popover], :popover-open, [data-p
   // Also covers legacy Knockout <span class="label"> tags in the call booking
   // search results list (ul.callscreen-search-location-results).
   const CHIP_SEL = '[style*="--int-"],[class*="chip"],[data-anvil-component][style*="background-color"],.callscreen-search-location-results .label';
+  // v1.5: Anvil Cards with a pale inline tint (job flyout / Edit Appointment
+  // drawer status tints) are surfaces, not chips. Don't counter-invert them;
+  // mark them so the CSS keeps them dark. Pale = HSL lightness >= 70%.
+  const CARD_TINT_ATTR = 'data-st-card-tint';
+  function isPaleCard(el) {
+    if (el.getAttribute?.('data-anvil-component') !== 'Card') return false;
+    // The Edit Appointment drawer's outer card only shows its status color as
+    // the stripe down the left edge; the form sits on a nested card. Treat it
+    // as a surface whatever the color (Done is a mid-tone green).
+    if (/appointment-form-card/.test(el.className || '')) return true;
+    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(el.style?.backgroundColor || '');
+    if (!m) return false;
+    const v = [+m[1], +m[2], +m[3]];
+    return (Math.max(...v) + Math.min(...v)) / 2 >= 178;
+  }
   function fixChips(ctx=document) {
     try {
       const apply = (el) => {
         if (el.closest?.('[data-anv="card"]')) return;   // card handles it
         if (el.closest?.('[popover]')) return;            // top-layer, no filter
+        if (isPaleCard(el)) {
+          el.setAttribute(CARD_TINT_ATTR, '');
+          el.style.removeProperty('filter');
+          return;
+        }
+        el.removeAttribute(CARD_TINT_ATTR);
         el.style.setProperty('filter', 'invert(1) hue-rotate(180deg)', 'important');
       };
       if (ctx !== document && ctx.matches?.(CHIP_SEL)) apply(ctx);
@@ -1043,8 +1190,9 @@ html[data-st-dark="on"] :is([data-anv="card"], [popover], :popover-open, [data-p
   }
   function clearChips(ctx=document) {
     try {
-      if (ctx !== document && ctx.matches?.(CHIP_SEL)) ctx.style.removeProperty('filter');
-      ctx.querySelectorAll?.(CHIP_SEL).forEach(el => el.style.removeProperty('filter'));
+      const clear = (el) => { el.style.removeProperty('filter'); el.removeAttribute(CARD_TINT_ATTR); };
+      if (ctx !== document && ctx.matches?.(CHIP_SEL)) clear(ctx);
+      ctx.querySelectorAll?.(CHIP_SEL).forEach(clear);
     } catch {}
   }
 
@@ -2267,19 +2415,23 @@ html[data-st-dark="on"] [data-st-sidebar="on"] mark{
    Problem: ServiceTitan hard-codes 1px light-gray borders (the #DFE0E1
    family) as the separators between the board rows, the jobs tray, and the
    Activity Center. In dark mode those grays invert to ~#202021 - almost
-   exactly the special darker dispatch background (#E0DEDD pre-inversion) -
-   so every divider disappears. The colors are hard-coded per element (no CSS
-   variable to override) and the class names are build-hashed, so a
-   computed-style scan is the only robust approach.
+   exactly the special darker dispatch background - so every divider
+   disappears. The colors are hard-coded per element (no CSS variable to
+   override) and the class names are build-hashed, so a computed-style scan
+   is the only robust approach.
 
    Fix: while dark mode is on AND the dispatch route watcher has stamped
    data-st-dispatch="on", scan the dispatch-related shadow roots
    (servicetitan-dispatch-*) for solid borders whose computed color is a
    near-uniform light gray (all channels 210-245, spread <= 8) and override
-   the border color inline to rgb(197,197,198), which the html filter renders
-   as ~#444445 - the same border color ServiceTitan's own design tokens use
-   for dark mode (--border-color-subdued). Turning dark mode off removes the
-   inline overrides; the underlying stylesheets are never touched.
+   the border color inline to rgb(221,226,232), which the html filter renders
+   as a subtle cool gray line that matches the v1.5 dispatch palette (it was
+   rgb(197,197,198) before v1.5, which read too bright on the darker canvas).
+   Turning dark mode off removes the inline overrides; the underlying
+   stylesheets are never touched.
+
+   v1.5 also tints status-colored job cards here (see "Status-colored job
+   cards" below and the dispatch block in SHADOW_CSS).
 
    Skipped contexts: counter-inverted cards, top-layer popovers, and popover
    containers - borders there do not pass through the html filter the same
@@ -2292,7 +2444,7 @@ html[data-st-dark="on"] [data-st-sidebar="on"] mark{
   const active = () => docEl.getAttribute('data-st-dark') === 'on' &&
                        docEl.getAttribute('data-st-dispatch') === 'on';
   const ATTR = 'data-st-divider-fix';
-  const FIX_COLOR = 'rgb(197,197,198)';   /* renders ~#444445 through the html filter */
+  const FIX_COLOR = 'rgb(221,226,232)';   /* renders a subtle cool gray through the html filter */
   const SIDES = ['top','right','bottom','left'];
   const SKIP_SEL = '[data-anv="card"],[popover],[class*="popover-container"]';
 
@@ -2342,6 +2494,83 @@ html[data-st-dark="on"] [data-st-sidebar="on"] mark{
     return roots;
   }
 
+  /* ---- Status-colored job cards (v1.5) ------------------------------------
+     Job cards are counter-inverted, so a status color (Dispatched lilac,
+     Working green, ...) showed as a bright pastel block on the dark board.
+     Give each one a dark wash of its own hue instead: hsl(hue, <=45%, 17%)
+     in --st-card-bg plus a data-st-tinted flag that the SHADOW_CSS dispatch
+     block uses. Default gray cards (rgb(240,240,240)) are styled by CSS alone.
+     Cards change color in place when their status changes, so this also
+     watches style attributes. */
+  const TINT_ATTR = 'data-st-tinted';
+  const TINT_VAR = '--st-card-bg';
+  const JOB_CARD_SEL = '[data-anv="card"]:is([class*="job-card-"], [class*="base-card__"])';
+
+  function cardWash(bg) {
+    const m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(bg || '');
+    if (!m) return null;
+    const r = +m[1] / 255, g = +m[2] / 255, b = +m[3] / 255;
+    if (m[1] === '240' && m[2] === '240' && m[3] === '240') return null;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    let h = 0, s = 0;
+    if (mx !== mn) {
+      const d = mx - mn;
+      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      h *= 60;
+    }
+    return 'hsl(' + Math.round(h) + ', ' + Math.round(Math.min(s * 100, 45)) + '%, 17%)';
+  }
+
+  function tintCard(c) {
+    try {
+      const wash = cardWash(c.style.backgroundColor);
+      if (!wash) {
+        if (c.hasAttribute(TINT_ATTR)) { c.removeAttribute(TINT_ATTR); c.style.removeProperty(TINT_VAR); }
+        return;
+      }
+      if (c.style.getPropertyValue(TINT_VAR) !== wash) c.style.setProperty(TINT_VAR, wash);
+      if (!c.hasAttribute(TINT_ATTR)) c.setAttribute(TINT_ATTR, '');
+    } catch (e) {}
+  }
+
+  function tintRoot(root) {
+    if (!active()) return;
+    try { root.querySelectorAll(JOB_CARD_SEL).forEach(tintCard); } catch (e) {}
+  }
+
+  /* Tint cards inside the observer callback itself. MutationObserver
+     callbacks run as a microtask right after the DOM change and before the
+     browser paints, so a card the board re-mounts while scrolling is tinted
+     before it's ever drawn. (An earlier 100ms throttle left re-mounted
+     cards in their bright original color for ~100ms, which flashed while
+     scrolling.) Only added subtrees and style changes on job cards are
+     touched, so this stays cheap. Our own --st-card-bg write re-enters once
+     and stops because the value is unchanged. */
+  const tintObs = new MutationObserver(muts => {
+    if (!active()) return;
+    for (const m of muts) {
+      if (m.type === 'attributes') {
+        if (m.target.matches?.(JOB_CARD_SEL)) tintCard(m.target);
+      } else {
+        m.addedNodes.forEach(n => {
+          if (n.nodeType !== 1) return;
+          if (n.matches(JOB_CARD_SEL)) tintCard(n);
+          n.querySelectorAll?.(JOB_CARD_SEL).forEach(tintCard);
+        });
+      }
+    }
+  });
+
+  function watchRoot(sr) {
+    if (observedRoots.has(sr)) return;
+    observedRoots.add(sr);
+    try { rootObs.observe(sr, { childList: true, subtree: true }); } catch (e) {}
+    try { tintObs.observe(sr, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] }); } catch (e) {}
+    scanRoot(sr);
+    tintRoot(sr);
+  }
+
   function clearAll() {
     dispatchRoots().forEach(sr => {
       try {
@@ -2350,6 +2579,10 @@ html[data-st-dark="on"] [data-st-sidebar="on"] mark{
             if (s) el.style.removeProperty('border-' + s + '-color');
           });
           el.removeAttribute(ATTR);
+        });
+        sr.querySelectorAll('[' + TINT_ATTR + ']').forEach(c => {
+          c.removeAttribute(TINT_ATTR);
+          c.style.removeProperty(TINT_VAR);
         });
       } catch (e) {}
     });
@@ -2375,11 +2608,8 @@ html[data-st-dark="on"] [data-st-sidebar="on"] mark{
 
   function activate() {
     dispatchRoots().forEach(sr => {
-      if (!observedRoots.has(sr)) {
-        observedRoots.add(sr);
-        try { rootObs.observe(sr, { childList: true, subtree: true }); } catch (e) {}
-      }
-      scanRoot(sr);
+      if (observedRoots.has(sr)) { scanRoot(sr); tintRoot(sr); }
+      else watchRoot(sr);
     });
   }
 
@@ -2395,13 +2625,7 @@ html[data-st-dark="on"] [data-st-sidebar="on"] mark{
     if (!active()) return;
     clearTimeout(hostTimer);
     hostTimer = setTimeout(() => {
-      dispatchRoots().forEach(sr => {
-        if (!observedRoots.has(sr)) {
-          observedRoots.add(sr);
-          try { rootObs.observe(sr, { childList: true, subtree: true }); } catch (e) {}
-          scanRoot(sr);
-        }
-      });
+      dispatchRoots().forEach(watchRoot);
     }, 300);
   }).observe(docEl, { childList: true, subtree: true });
 
