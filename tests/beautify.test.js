@@ -23,6 +23,7 @@ function harness(initialFlag = false) {
   return { api: window.__ST_BEAUTIFY__, location, intervals, listeners, flush,
     flag(value) { on = value; observers.find(o => o.options?.attributeFilter)?.fn(); flush(); },
     dom() { observers.find(o => o.options?.childList)?.fn([{ addedNodes: [{ nodeType: 1 }], removedNodes: [] }]); flush(); },
+    domNoFlush() { observers.find(o => o.options?.childList)?.fn([{ addedNodes: [{ nodeType: 1 }], removedNodes: [] }]); },
     route(hash) { location.hash = hash; location.href = 'https://go.servicetitan.com/' + hash; for (const fn of intervals.values()) fn(); flush(); }
   };
 }
@@ -58,6 +59,17 @@ test('outgoing email presentation survives navigation until removal, but disable
   h.route('#/Invoice/2'); h.route('#/Job/2'); h.flag(false); assert.equal(cleans, 2);
   h.route('#/Invoice/3'); h.flag(true); h.route('#/Job/3');
   h.listeners.beforeprint(); assert.equal(cleans, 3);
+});
+
+test('a view that renders on a matching route mounts before paint, not on the debounce timer', () => {
+  const h = harness(true); let root = null, mounts = 0;
+  h.api.register({ id: 'invoice', matches: url => url.hash.startsWith('#/Invoice/'), findRoot: () => root, mount() { mounts++; return () => {}; } });
+  h.flush(); assert.equal(mounts, 0);
+  root = { isConnected: true };
+  h.domNoFlush();   // observer callback only, no timer flush: already mounted
+  assert.equal(mounts, 1);
+  // Once mounted, further DOM churn goes back to the debounced path.
+  h.domNoFlush(); assert.equal(mounts, 1);
 });
 
 test('print endpoints never mount even with a previously enabled flag', () => {

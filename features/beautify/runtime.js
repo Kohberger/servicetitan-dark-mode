@@ -30,6 +30,18 @@
   function schedule() {
     if (timer === undefined) timer = setTimeout(sync, 40);
   }
+  // A module whose route matches but which has no live root is waiting for
+  // its view to render. Mount it in the observer callback itself: that runs
+  // before the browser paints, so the native layout never shows first.
+  // Everything else keeps the 40ms debounce.
+  function waiting() {
+    for (const state of modules.values()) {
+      try {
+        if ((!state.root || state.root.isConnected === false) && state.module.matches(location)) return true;
+      } catch {}
+    }
+    return false;
+  }
   function flagChanged() {
     clearInterval(navigationTimer);
     navigationTimer = undefined;
@@ -66,7 +78,9 @@
   }
   new MutationObserver(records => {
     watchFlag();
-    if (enabled() && records.some(r => [...r.addedNodes, ...r.removedNodes].some(n => n.nodeType === 1))) schedule();
+    if (enabled() && records.some(r => [...r.addedNodes, ...r.removedNodes].some(n => n.nodeType === 1))) {
+      if (waiting()) sync(); else schedule();
+    }
   }).observe(document, { childList: true, subtree: true });
   watchFlag();
 })();
