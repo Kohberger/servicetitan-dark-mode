@@ -33,7 +33,9 @@
       ],
       "js": [
         "engine.js",
-        "features/beautify/email-recipients.js"
+        "features/beautify/email-recipients.js",
+        "features/beautify/chat-automated.js",
+        "features/beautify/chat-bulk-actions.js"
       ],
       "run_at": "document_start",
       "all_frames": true,
@@ -75,7 +77,8 @@
         "features/beautify/batching.css",
         "features/beautify/invoice-email.css",
         "features/beautify/customer-summary.css",
-        "features/beautify/job-contacts.css"
+        "features/beautify/job-contacts.css",
+        "features/beautify/chat-center.css"
       ],
       "run_at": "document_start",
       "all_frames": true,

@@ -95,7 +95,7 @@ test('manifest keeps isolated all-frame feature scripts and no added permissions
 });
 
 test('every stylesheet selector is explicitly gated, including nested media rules', () => {
-  for (const filename of ['beautify.css', 'invoice-email.css', 'customer-summary.css']) {
+  for (const filename of ['beautify.css', 'invoice-email.css', 'customer-summary.css', 'chat-center.css']) {
     const css = source(filename).replace(/\/\*[\s\S]*?\*\//g, '');
     let rules = 0;
     for (const match of css.matchAll(/(?:^|(?<=[{}]))\s*([^{}]+)\{/g)) {
@@ -104,7 +104,7 @@ test('every stylesheet selector is explicitly gated, including nested media rule
       for (const selector of prelude.split(',\n')) assert.ok(/^html\[data-st-beautify="on"\](?:\s|:has\(form\[data-st-email-ui\]\)\s*$)/.test(selector.trim()), selector);
       rules++;
     }
-    assert.ok(rules > (filename === 'beautify.css' ? 150 : filename === 'customer-summary.css' ? 20 : 30));
+    assert.ok(rules > (filename === 'beautify.css' ? 150 : filename === 'customer-summary.css' ? 20 : filename === 'chat-center.css' ? 10 : 30));
     assert.ok(css.trim().startsWith('@media screen {'));
   }
 });
@@ -153,4 +153,69 @@ test('job modules retain outgoing styles during invoice loading and still clean 
     h.route('#/EditInvoice/6'); h.listeners.beforeprint();
     assert.equal(cleans, 3, `${file}: printing overrides retention`);
   }
+});
+
+test('chat rows ending in an automated send are marked replied only while Beautify is on in Chat Center', () => {
+  const obs = v => () => v;
+  const msg = (o = {}) => ({ IsNotification: obs(false), IsOutbound: obs(true), HasNotBeenDelivered: obs(false), ...o });
+  const thread = (last, o = {}) => ({ IsReplied: obs(false), IsUnread: obs(false), LastMessage: obs(last), ...o });
+  const row = vmodel => {
+    const attrs = new Set();
+    return { vmodel, hasAttribute: a => attrs.has(a), toggleAttribute: (a, on) => { on ? attrs.add(a) : attrs.delete(a); } };
+  };
+  const rows = [
+    row(thread(msg({ IsNotification: obs(true) }))),                                  // reminder: marked
+    row(thread(msg({ IsInbound: obs(true), IsOutbound: obs(false) }))),               // customer: not marked
+    row(thread(msg({ IsNotification: obs(true), HasNotBeenDelivered: obs(true) }))),  // failed reminder: not marked
+    row(thread(msg({ IsNotification: obs(true) }), { IsReplied: obs(true) })),        // already native replied
+    row(thread(msg())),                                                                // agent reply without IsReplied: not marked
+  ];
+  let flag = 'on', timer, observer;
+  const location = { hash: '#/ChatCenter' };
+  const window = { ko: { dataFor: r => r.vmodel } };
+  vm.runInNewContext(source('chat-automated.js'), {
+    window, location, addEventListener() {},
+    document: { documentElement: { getAttribute: () => flag }, querySelectorAll: () => rows },
+    setTimeout: fn => { timer = fn; return 1; },
+    MutationObserver: class { constructor(fn) { observer = fn; } observe() {} },
+  });
+  const flush = () => { observer([]); timer(); };
+  const marked = () => rows.map(r => r.hasAttribute('data-st-chat-automated'));
+  flush(); assert.deepEqual(marked(), [true, false, false, false, false]);
+  flag = null; flush(); assert.deepEqual(marked(), [false, false, false, false, false], 'disable restores native rows');
+  flag = 'on'; location.hash = '#/Job/Index/5'; flush(); assert.deepEqual(marked(), [false, false, false, false, false], 'inactive outside Chat Center');
+  assert.equal(window.__ST_CHAT_AUTOMATED__.isAutomated(null), false);
+});
+
+test('chat bulk actions follow the in-thread menu rules and only run on the Open list with Beautify and write access', () => {
+  const obs = v => () => v;
+  let flag = 'on', write = true, tab = 0;
+  const location = { hash: '#/ChatCenter' };
+  const window = {
+    ko: {},
+    AppUser: { HasPermission: p => p === 'write' ? write : false },
+    App: { Permissions: { ChatCenterWrite: 'write', EditPhone: 'phone' }, Enums: { ChatThreadViewStatus: { Open: 0 } }, Chat: { Instance: () => ({ ActiveTab: () => tab }) } },
+  };
+  vm.runInNewContext(source('chat-bulk-actions.js'), {
+    window, location, addEventListener() {},
+    document: { documentElement: { getAttribute: () => flag }, querySelectorAll: () => [], querySelector: () => null, addEventListener() {} },
+    setTimeout: () => 1,
+    MutationObserver: class { observe() {} },
+  });
+  const { canUnread, canClose, canBlock, active } = window.__ST_CHAT_BULK__;
+  const fn = () => {};
+  const thread = o => ({ IsUnread: obs(false), IsReplied: obs(false), IsClosed: obs(false), VisibleTypingUsers: obs([]),
+    clickUnreadThread: fn, closeThread: fn, blockThread: fn, ...o });
+  assert.equal(canUnread(thread()), true);
+  assert.equal(canUnread(thread({ IsUnread: obs(true) })), false, 'already unread');
+  assert.equal(canUnread(thread({ IsReplied: obs(true) })), true, 'replied threads can be marked unread as a reminder');
+  assert.equal(canClose(thread()), true);
+  assert.equal(canClose(thread({ IsClosed: obs(true) })), false);
+  assert.equal(canClose(thread({ VisibleTypingUsers: obs([{}]) })), false, 'another agent is replying');
+  assert.equal(canBlock(thread({ blockThread: undefined })), false, 'missing method fails quietly');
+  assert.equal(active(), true);
+  flag = null; assert.equal(active(), false, 'Beautify off');
+  flag = 'on'; tab = 10; assert.equal(active(), false, 'Closed tab');
+  tab = 0; write = false; assert.equal(active(), false, 'no Chat Center write permission');
+  write = true; location.hash = '#/ChatCenter/8015121360'; assert.equal(active(), false, 'inside a thread');
 });
