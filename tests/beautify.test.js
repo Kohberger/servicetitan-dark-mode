@@ -193,8 +193,8 @@ test('chat rows ending in an automated send are marked replied only while Beauti
   vm.runInNewContext(source('chat-automated.js'), {
     window, location, addEventListener() {},
     document: { documentElement: { getAttribute: () => flag }, querySelectorAll: () => rows },
-    setTimeout: fn => { timer = fn; return 1; },
-    MutationObserver: class { constructor(fn) { observer = fn; } observe() {} },
+    setTimeout: fn => { timer = fn; return 1; }, setInterval: () => 2, clearInterval() {},
+    MutationObserver: class { constructor(fn) { observer = fn; } observe() {} disconnect() {} },
   });
   const flush = () => { observer([]); timer(); };
   const marked = () => rows.map(r => r.hasAttribute('data-st-chat-automated'));
@@ -216,8 +216,8 @@ test('chat bulk actions follow the in-thread menu rules and only run on the Open
   vm.runInNewContext(source('chat-bulk-actions.js'), {
     window, location, addEventListener() {},
     document: { documentElement: { getAttribute: () => flag }, querySelectorAll: () => [], querySelector: () => null, addEventListener() {} },
-    setTimeout: () => 1,
-    MutationObserver: class { observe() {} },
+    setTimeout: () => 1, setInterval: () => 2, clearInterval() {},
+    MutationObserver: class { observe() {} disconnect() {} },
   });
   const { canUnread, canClose, canBlock, active } = window.__ST_CHAT_BULK__;
   const fn = () => {};

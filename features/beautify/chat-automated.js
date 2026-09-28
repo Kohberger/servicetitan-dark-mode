@@ -16,7 +16,7 @@
   function sync() {
     timer = undefined;
     const on = active();
-    if (!on && !marked) return;
+    if (!on && !marked) { watch(); return; }
     marked = false;
     for (const row of document.querySelectorAll('.cht-contacts .cht-contact')) {
       let automated = false;
@@ -29,16 +29,31 @@
       if (automated !== row.hasAttribute(ATTR)) row.toggleAttribute(ATTR, automated);
       marked ||= automated;
     }
+    watch();
   }
   const schedule = () => { if (timer === undefined) timer = setTimeout(sync, 50); };
+  // Watch every DOM change only on Chat Center with Beautify on, or while rows
+  // are still marked. Elsewhere this listens only for the Beautify flag and URL
+  // changes, so busy pages like the dispatch board don't wake it on every update.
+  let pageObserver, watching = false, poll, lastURL;
+  function watch() {
+    if (!pageObserver) return;
+    const flag = document.documentElement?.getAttribute('data-st-beautify') === 'on';
+    // Some ServiceTitan navigation doesn't fire hashchange, so compare the URL
+    // a few times a second while Beautify is on.
+    if (flag && poll === undefined) poll = setInterval(() => { if (location.href !== lastURL) { lastURL = location.href; schedule(); } }, 250);
+    else if (!flag && poll !== undefined) { clearInterval(poll); poll = undefined; }
+    const want = marked || (flag && /^#\/ChatCenter/i.test(location.hash));
+    if (want === watching) return;
+    watching = want;
+    if (want) pageObserver.observe(document, { childList: true, subtree: true, characterData: true });
+    else pageObserver.disconnect();
+  }
   try {
-    // New messages rewrite the row's preview text, so text changes cover
-    // LastMessage updates as well as rows being added or reused. Elsewhere in
-    // the app this returns immediately unless rows still need unmarking.
-    new MutationObserver(() => {
-      if (marked || /^#\/ChatCenter/i.test(location.hash)) schedule();
-    }).observe(document, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-st-beautify'] });
+    pageObserver = new MutationObserver(schedule);
+    new MutationObserver(schedule).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-st-beautify'] });
     addEventListener('hashchange', schedule);
+    addEventListener('popstate', schedule);
     schedule();
   } catch {}
 })();

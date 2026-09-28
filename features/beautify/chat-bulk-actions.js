@@ -191,7 +191,7 @@
     timer = undefined;
     if (document.documentElement?.getAttribute('data-st-beautify') === 'on') markReadonly();
     else document.body?.removeAttribute(READONLY);
-    if (!active()) { if (mounted) unmount(); return; }
+    if (!active()) { if (mounted) unmount(); watch(); return; }
     mounted = true;
     const present = new Set();
     for (const { row, thread } of loadedRows()) {
@@ -208,14 +208,32 @@
     // Threads that were closed, blocked or filtered out by search drop out of the selection.
     for (const id of [...selected]) if (!present.has(id)) selected.delete(id);
     renderBar(document.querySelector('.cht-contacts'));
+    watch();
   }
 
   const schedule = () => { if (timer === undefined) timer = setTimeout(sync, 50); };
+  // Watch every DOM change only on Chat Center with Beautify on, or while our
+  // checkboxes are still mounted. Elsewhere this listens only for the Beautify
+  // flag and URL changes, so busy pages like the dispatch board don't wake it.
+  let pageObserver, watching = false, poll, lastURL;
+  function watch() {
+    if (!pageObserver) return;
+    const flag = document.documentElement?.getAttribute('data-st-beautify') === 'on';
+    // Some ServiceTitan navigation doesn't fire hashchange, so compare the URL
+    // a few times a second while Beautify is on.
+    if (flag && poll === undefined) poll = setInterval(() => { if (location.href !== lastURL) { lastURL = location.href; schedule(); } }, 250);
+    else if (!flag && poll !== undefined) { clearInterval(poll); poll = undefined; }
+    const want = mounted || (flag && /^#\/ChatCenter/i.test(location.hash));
+    if (want === watching) return;
+    watching = want;
+    if (want) pageObserver.observe(document, { childList: true, subtree: true, characterData: true });
+    else pageObserver.disconnect();
+  }
   try {
-    new MutationObserver(() => {
-      if (mounted || /^#\/ChatCenter/i.test(location.hash)) schedule();
-    }).observe(document, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-st-beautify'] });
+    pageObserver = new MutationObserver(schedule);
+    new MutationObserver(schedule).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-st-beautify'] });
     addEventListener('hashchange', schedule);
+    addEventListener('popstate', schedule);
     // Escape clears the selection, the same way it closes most ServiceTitan popups.
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && mounted && selected.size && !document.querySelector(`[${DIALOG}]`)) clearSelection();
