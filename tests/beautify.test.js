@@ -155,6 +155,23 @@ test('job modules retain outgoing styles during invoice loading and still clean 
   }
 });
 
+test('job modules also run on the job tab beside a Chat Center thread, and only inside its job panel', () => {
+  for (const file of ['job-contacts.js', 'job-audit.js']) {
+    let module;
+    const panelRoot = { closest: () => panelRoot };
+    const panel = { querySelector: () => panelRoot };
+    const location = { hash: '#/ChatCenter/8013769592?jobid=82125826' };
+    const queried = [];
+    const document = { querySelector: s => { queried.push(s); return s.startsWith('#cht-job-details-container') ? (s.endsWith('.job-detail-view') ? panel : panelRoot) : null; } };
+    vm.runInNewContext(source(file), { location, document, window: { __ST_BEAUTIFY__: { register: value => { module = value; } } } });
+    assert.equal(module.matches({ hash: '#/Job/Index/82125826' }), true, file);
+    assert.equal(module.matches({ hash: '#/ChatCenter/8013769592?jobid=82125826' }), true, `${file}: chat split view`);
+    assert.equal(module.matches({ hash: '#/ChatCenter' }), false, `${file}: thread list has no job panel`);
+    assert.equal(module.findRoot(), panelRoot, file);
+    assert.ok(queried.every(s => s.startsWith('#cht-job-details-container')), `${file}: never matches the Book a Job form`);
+  }
+});
+
 test('chat rows ending in an automated send are marked replied only while Beautify is on in Chat Center', () => {
   const obs = v => () => v;
   const msg = (o = {}) => ({ IsNotification: obs(false), IsOutbound: obs(true), HasNotBeenDelivered: obs(false), ...o });
@@ -218,4 +235,43 @@ test('chat bulk actions follow the in-thread menu rules and only run on the Open
   flag = 'on'; tab = 10; assert.equal(active(), false, 'Closed tab');
   tab = 0; write = false; assert.equal(active(), false, 'no Chat Center write permission');
   write = true; location.hash = '#/ChatCenter/8015121360'; assert.equal(active(), false, 'inside a thread');
+});
+
+test('chat reply box sends on Cmd/Ctrl+Enter through the native Send button only when it could send', () => {
+  let module;
+  const node = () => { const attrs = {}; return { attrs, children: [], setAttribute(k, v) { attrs[k] = v; }, getAttribute: k => attrs[k] ?? null,
+    hasAttribute: k => k in attrs, removeAttribute(k) { delete attrs[k]; }, append(...n) { this.children.push(...n); }, remove() { this.removed = true; } }; };
+  const window = { __ST_BEAUTIFY__: { register: m => { module = m; } } };
+  vm.runInNewContext(source('chat-composer.js'), {
+    window, navigator: { platform: 'MacIntel' }, Event: class { constructor(type) { this.type = type; } },
+    document: { createElement: node, createTextNode: t => ({ t }) },
+  });
+  assert.equal(module.id, 'chat-composer');
+  assert.equal(module.matches({ hash: '#/ChatCenter/8013769592?jobid=1' }), true);
+  assert.equal(module.matches({ hash: '#/ChatCenter' }), false, 'thread list has no reply box');
+  const key = o => ({ key: 'Enter', metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, isComposing: false, ...o });
+  assert.equal(module.isSendShortcut(key({ metaKey: true })), true);
+  assert.equal(module.isSendShortcut(key({ ctrlKey: true })), true);
+  assert.equal(module.isSendShortcut(key({})), false, 'plain Enter still makes a new line');
+  assert.equal(module.isSendShortcut(key({ metaKey: true, shiftKey: true })), false);
+  assert.equal(module.isSendShortcut(key({ metaKey: true, isComposing: true })), false, 'IME composition is not a send');
+
+  let clicks = 0, changes = 0, handler;
+  const input = { ...node(), value: '', disabled: false, dispatchEvent: e => { if (e.type === 'change') changes++; } };
+  const send = { ...node(), disabled: false, classList: { contains: () => false }, click: () => clicks++ };
+  const root = { ...node(), querySelector: s => s.startsWith('textarea') ? input : send,
+    addEventListener: (t, fn) => { handler = fn; }, removeEventListener: () => { handler = null; } };
+  const dispose = module.mount(root);
+  const hint = root.children[0];
+  assert.ok(hint.hasAttribute('data-st-chat-hint'));
+  assert.equal(send.getAttribute('title'), 'Send (⌘Enter)');
+  let prevented = 0;
+  const press = o => handler({ target: input, preventDefault: () => prevented++, stopPropagation() {}, ...key({ metaKey: true, ...o }) });
+  press(); assert.equal(clicks, 0, 'empty box does not send');
+  input.value = '   '; press(); assert.equal(clicks, 0, 'whitespace does not send');
+  input.value = 'On our way'; input.disabled = true; press(); assert.equal(clicks, 0, 'disabled while sending or without permission');
+  input.disabled = false; press(); assert.equal(clicks, 1); assert.equal(changes, 1, 'syncs Knockout before sending');
+  assert.equal(prevented, 4, 'the shortcut never inserts a newline');
+  dispose();
+  assert.equal(hint.removed, true); assert.equal(send.hasAttribute('title'), false); assert.equal(handler, null);
 });

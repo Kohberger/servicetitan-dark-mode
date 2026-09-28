@@ -8,11 +8,14 @@
     name: 'Job activity digest',
     description: 'Readable notes, native filters, and expandable activity groups.',
     retainUntilRemoved: true,
-    matches: url => /^#\/Job\/Index\/\d+\/?(?:\?.*)?$/i.test(url.hash),
+    // Job pages, plus the job tab beside a Chat Center thread (#/ChatCenter/<number>?jobid=…).
+    matches: url => /^#\/Job\/Index\/\d+\/?(?:\?.*)?$/i.test(url.hash) || /^#\/ChatCenter\/[^/?#]+/i.test(url.hash),
     // ServiceTitan only adds .job-history-tab-content when the tenant has the
     // InternalCommunicationEnabled feature on; other tenants render the same
     // history list inside the classic job detail view.
-    findRoot: () => document.querySelector('.job-history-tab-content .history > ul.unstyled, .job-detail-view .history > ul.unstyled'),
+    findRoot: () => /^#\/ChatCenter\//i.test(location.hash)
+      ? document.querySelector('#cht-job-details-container .job-detail-view .history > ul.unstyled')
+      : document.querySelector('.job-history-tab-content .history > ul.unstyled, .job-detail-view .history > ul.unstyled'),
     mount(list) {
       const history = list.parentElement;
       const owned = new Map();

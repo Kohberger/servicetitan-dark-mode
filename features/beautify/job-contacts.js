@@ -115,8 +115,10 @@
   window.__ST_BEAUTIFY__?.register({
     id: 'job-contacts',
     retainUntilRemoved: true,
-    matches: url => /^#\/Job\/Index\/\d+/i.test(url.hash),
-    findRoot: () => document.querySelector('.qa-customer-name')?.closest('.CardSection'),
+    // Job pages, plus the job tab beside a Chat Center thread (#/ChatCenter/<number>?jobid=…).
+    matches: url => /^#\/Job\/Index\/\d+/i.test(url.hash) || /^#\/ChatCenter\/[^/?#]+/i.test(url.hash),
+    findRoot: () => (/^#\/ChatCenter\//i.test(location.hash) ? document.querySelector('#cht-job-details-container .job-detail-view') : document)
+      ?.querySelector('.qa-customer-name')?.closest('.CardSection') || null,
     mount(root) {
       let host, signature, timer, sources = [];
       const state = { expanded: false };

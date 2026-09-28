@@ -70,7 +70,8 @@
         "features/beautify/invoice-email.js",
         "features/beautify/job-audit.js",
         "features/beautify/batching.js",
-        "features/beautify/job-contacts.js"
+        "features/beautify/job-contacts.js",
+        "features/beautify/chat-composer.js"
       ],
       "css": [
         "features/beautify/beautify.css",
