@@ -43,7 +43,12 @@
     const detailItems = [...(details?.querySelectorAll('.st-invoice-details-item') || [])];
     const sidebar = root.querySelector(':scope > div > .row:last-child > .span3');
     const panelBox = details.getBoundingClientRect(), sideBox = sidebar.getBoundingClientRect();
-    check('Details panel tops the main column, above Job Summary', details.parentElement.matches('.span9') && details === details.parentElement.firstElementChild && !!details.nextElementSibling?.querySelector('.invoice-details-view') && panelBox.bottom <= root.querySelector('.invoice-details-view').getBoundingClientRect().top);
+    check('Details panel tops the native details view, above Job Summary', details.parentElement.matches('.invoice-details-view') && details === details.parentElement.firstElementChild && details.nextElementSibling?.tagName === 'TABLE' && panelBox.bottom <= details.nextElementSibling.getBoundingClientRect().top);
+    const nativeDetailsView = details.parentElement;
+    nativeDetailsView.style.display = 'none';
+    check('Editing hides Posting & Status with the native details', details.getClientRects().length === 0);
+    nativeDetailsView.style.display = '';
+    check('Returning from editing restores the same Posting & Status panel', details.getClientRects().length > 0 && root.querySelector('.st-invoice-details-panel') === details);
     check('Details panel sits beside the sidebar', innerWidth <= 1100 || (panelBox.left >= sideBox.right && panelBox.top < sideBox.bottom && sideBox.top < panelBox.bottom));
     check('Details panel has a title and no subtitle', details.querySelector('h2')?.textContent === 'Posting & Status' && !details.querySelector('.st-invoice-details-heading p'));
     check('Details panel shows the hidden fields in order', detailItems.map(i => i.querySelector('dt').textContent).join('|') === 'Invoice Date|Post Date|Batch|Review Status|Period Status|Export Status');
@@ -132,6 +137,18 @@
     await wait();
     check('Populated attribution displays native value', !attribution.hasAttribute('data-st-invoice-empty') && !attribution.querySelector('.st-invoice-empty-attribution') && !attributionValue.hasAttribute('data-st-invoice-empty-value'));
     attributionValue.textContent = '[None]';
+    const attributionHeadings = [...root.querySelectorAll('[data-st-invoice-attribution]')];
+    nativeDetailsView.style.display = 'none';
+    await wait();
+    check('Editing hides both native attribution headings and placeholders', attributionHeadings.length === 2 && attributionHeadings.every(el => el.getClientRects().length === 0));
+    nativeDetailsView.style.display = '';
+    await wait();
+    check('Leaving editor restores the same bound attribution headings', attributionHeadings.every(el => root.contains(el) && el.getClientRects().length > 0));
+    nativeDetailsView.hidden = true;
+    await wait();
+    check('Attribution also follows native hidden state', attributionHeadings.every(el => el.getClientRects().length === 0));
+    nativeDetailsView.hidden = false;
+    await wait();
     await wait();
     check('Unspecified summary is visually secondary', root.querySelector('[data-st-invoice-empty-summary]') && getComputedStyle(root.querySelector('[data-st-invoice-empty-summary]')).fontStyle === 'italic');
     const moveButton = root.querySelector('[data-st-invoice-bulk-actions] button');
@@ -189,10 +206,15 @@
     check('Pricing uses the base presentation palette', getComputedStyle(root.querySelector('[data-st-invoice-pricing]')).backgroundColor === 'rgb(255, 255, 255)');
     history.pushState(null, '', '#/Job/Index/10001');
     await wait();
+    check('Outgoing invoice stays styled during navigation', root.hasAttribute('data-st-invoice-ui') && root.hasAttribute('data-st-invoice-header'));
+    const outgoingParent = root.parentNode, outgoingSibling = root.nextSibling;
+    root.remove(); await wait();
     check('Leaving route removes all module annotations', !root.hasAttribute('data-st-invoice-ui') && !root.querySelector('[data-st-invoice-table],[data-st-invoice-number],[data-st-invoice-scroll]'));
     check('Leaving route removes generated polish', !root.querySelector('.st-invoice-empty-attribution,.st-invoice-selection-hint')) ;
     check('Leaving route removes generated header and restores metadata', !root.querySelector('[data-st-invoice-generated],[data-st-invoice-meta-hidden],[data-st-invoice-secondary]') && getComputedStyle(audit).display !== 'none');
     check('Leaving route restores accessibility attributes', !root.querySelector('.po-table').hasAttribute('tabindex') && !root.querySelector('.po-table').hasAttribute('role'));
+    outgoingParent.insertBefore(root, outgoingSibling); await wait();
+    check('Detached invoice cannot mount on unrelated route', !root.hasAttribute('data-st-invoice-ui'));
     history.replaceState(null, '', '#/EditInvoice/10001');
     await wait();
     check('Route reentry remounts', root.hasAttribute('data-st-invoice-ui'));
@@ -208,12 +230,15 @@
     check('Original root remounts after replacement', root.hasAttribute('data-st-invoice-ui') && root.parentElement === parent);
     history.pushState(null, '', '#/Invoice/Email/10001');
     await wait();
-    check('Invoice email route stays excluded', !root.hasAttribute('data-st-invoice-ui'));
+    check('Invoice-to-email transition retains presentation', root.hasAttribute('data-st-invoice-ui') && root.hasAttribute('data-st-invoice-header'));
+    root.remove(); await wait(); parent.append(root); await wait();
+    check('Invoice email route cannot mount a fresh invoice', !root.hasAttribute('data-st-invoice-ui'));
     history.pushState(null, '', '#/Invoice/10001');
     await wait();
     check('Return to Invoice alias reapplies all presentation', root.hasAttribute('data-st-invoice-ui') && root.hasAttribute('data-st-invoice-header') && !!root.querySelector('[data-st-invoice-pricing]'));
     history.pushState(null, '', '#/Invoice/10001/service');
     await wait();
+    root.remove(); await wait(); parent.append(root); await wait();
     check('Nested invoice subpage stays excluded', !root.hasAttribute('data-st-invoice-ui'));
     history.pushState(null, '', '#/Invoice/10001/?from=service');
     await wait();
@@ -224,6 +249,52 @@
     history.replaceState(null, '', '#/EditInvoice/10001');
     await wait();
     check('Original EditInvoice route still remounts', root.hasAttribute('data-st-invoice-ui'));
+    // Details navigation may replace descendants without changing root or URL.
+    const jobCaption = root.querySelector('.st-invoice-job-details-title');
+    const nativeCopy = el => {
+      const copy = el.cloneNode(true);
+      copy.querySelectorAll('[data-st-invoice-generated]').forEach(node => node.remove());
+      for (const node of [copy, ...copy.querySelectorAll('*')]) {
+        for (const attr of [...node.attributes]) if (attr.name.startsWith('data-st-invoice-')) node.removeAttribute(attr.name);
+      }
+      return copy;
+    };
+    for (let cycle = 0; cycle < 2; cycle++) {
+      for (const selector of [':scope > div > .row.m-b-1', ':scope > div > .pull-right.btn-group', ':scope > div > .attributes']) {
+        const old = root.querySelector(selector);
+        old.replaceWith(nativeCopy(old));
+      }
+      await wait();
+      const currentToggle = root.querySelector('.st-invoice-actions-toggle');
+      const currentPanel = root.querySelector('[data-st-invoice-actions-panel]');
+      check(`Header replacement ${cycle + 1} restores exactly one closed Actions menu`, root.querySelectorAll('.st-invoice-actions-toggle').length === 1 && getComputedStyle(currentPanel).display === 'none');
+      currentToggle.click();
+      check(`Header replacement ${cycle + 1} binds the new toggle`, currentToggle.getAttribute('aria-expanded') === 'true' && getComputedStyle(currentPanel).display !== 'none');
+      let calls = 0;
+      root.querySelector('#audit').addEventListener('click', () => calls++);
+      [...currentPanel.querySelectorAll('button')].find(el => el.textContent === 'View Audit Trail').click();
+      await wait();
+      check(`Header replacement ${cycle + 1} delegates once to the new native action`, calls === 1 && currentToggle.getAttribute('aria-expanded') === 'false');
+      check(`Header replacement ${cycle + 1} preserves other invoice enhancements`, root.querySelector('.st-invoice-job-details-title') === jobCaption && root.querySelectorAll('.st-invoice-details-panel').length === 1 && root.querySelectorAll('[data-st-invoice-primary]').length === 3);
+    }
+    root.querySelector('.st-invoice-actions-toggle').remove();
+    await wait();
+    check('Removed generated toggle is restored', root.querySelectorAll('.st-invoice-actions-toggle').length === 1);
+    const headerRow = root.querySelector(':scope > div > .row.m-b-1');
+    const rowParent = headerRow.parentElement;
+    headerRow.remove();
+    await wait();
+    check('Incomplete header remains unmounted', !root.querySelector('.st-invoice-actions-toggle'));
+    rowParent.prepend(nativeCopy(headerRow));
+    await wait();
+    check('Delayed header mounts when its controls arrive', root.querySelectorAll('.st-invoice-actions-toggle').length === 1);
+    history.pushState(null, '', '#/Job/Index/10001');
+    await wait();
+    root.remove(); await wait();
+    check('Recovered header cleans up when outgoing view is removed', !root.querySelector('[data-st-invoice-generated],[data-st-invoice-actions-panel],[data-st-invoice-primary]'));
+    history.replaceState(null, '', '#/EditInvoice/10001');
+    await wait();
+    parent.append(root); await wait();
     const count = output.filter(line => line.startsWith('PASS')).length;
     result.textContent += `\n${count}/${output.length} checks passed`;
   };

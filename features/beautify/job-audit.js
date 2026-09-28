@@ -7,15 +7,20 @@
     id: 'job-audit-digest',
     name: 'Job activity digest',
     description: 'Readable notes, native filters, and expandable activity groups.',
-    matches: url => /^#\/Job\/Index\/\d+\/?(?:\?.*)?$/i.test(url.hash),
+    retainUntilRemoved: true,
+    // Job pages, plus the job tab beside a Chat Center thread (#/ChatCenter/<number>?jobid=…).
+    matches: url => /^#\/Job\/Index\/\d+\/?(?:\?.*)?$/i.test(url.hash) || /^#\/ChatCenter\/[^/?#]+/i.test(url.hash),
     // ServiceTitan only adds .job-history-tab-content when the tenant has the
     // InternalCommunicationEnabled feature on; other tenants render the same
     // history list inside the classic job detail view.
-    findRoot: () => document.querySelector('.job-history-tab-content .history > ul.unstyled, .job-detail-view .history > ul.unstyled'),
+    findRoot: () => /^#\/ChatCenter\//i.test(location.hash)
+      ? document.querySelector('#cht-job-details-container .job-detail-view .history > ul.unstyled')
+      : document.querySelector('.job-history-tab-content .history > ul.unstyled, .job-detail-view .history > ul.unstyled'),
     mount(list) {
       const history = list.parentElement;
       const owned = new Map();
       const generated = new Set();
+      const ordered = new Set();
       const expanded = new WeakMap();
       let groups = [];
       let timer;
@@ -79,6 +84,16 @@
           : null;
         return { row, text, author, stamp, kind, day: stamp.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)?.[0] || '' };
       }
+      const parseStamp = stamp => {
+        const m = stamp.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP]M)/i);
+        if (!m) return NaN;
+        const hour = (+m[4] % 12) + (/p/i.test(m[6]) ? 12 : 0);
+        return new Date(+m[3], m[1] - 1, +m[2], hour, +m[5]).getTime();
+      };
+      const setOrder = (node, value) => {
+        node.style.order = String(value);
+        ordered.add(node);
+      };
       const setGroup = (group, open) => {
         expanded.set(group.first, open);
         group.button.setAttribute('aria-expanded', String(open));
@@ -135,7 +150,20 @@
           });
           const rows = [...list.children].filter(row => row.tagName === 'LI' && !row.hidden && getComputedStyle(row).display !== 'none');
           const query = search.value.trim().toLocaleLowerCase();
-          const records = rows.map(describe);
+          // ServiceTitan inserts some entries (e.g. chat logs) out of sequence.
+          // Show newest first with flex `order` instead of moving the nodes, so
+          // Knockout keeps ownership of the list's DOM sequence. Undated rows
+          // stay beside their neighbour; the "load all" row stays last.
+          let lastTime = Infinity;
+          const records = rows.map(describe).map(record => {
+            const time = parseStamp(record.stamp);
+            record.time = record.row.querySelector('a[data-bind*="loadAllEntries"]') ? -Infinity
+              : Number.isNaN(time) ? lastTime : (lastTime = time);
+            return record;
+          }).sort((a, b) => (b.time - a.time) || 0);
+          for (const node of ordered) if (!node.isConnected) ordered.delete(node);
+          // Leave two slots before each row for a date header and group header.
+          records.forEach((record, i) => setOrder(record.row, i * 3 + 2));
           const runs = [];
           let previous;
           for (const record of records) {
@@ -156,6 +184,7 @@
               const date = make('li', 'st-audit-date', first.day);
               date.setAttribute('aria-label', 'Activity on ' + first.day);
               list.insertBefore(date, first.row);
+              setOrder(date, +first.row.style.order - 2);
               generated.add(date);
             }
             if (run.length < 2) continue;
@@ -173,6 +202,7 @@
             button.append(icon, copy, chevron);
             header.append(button);
             list.insertBefore(header, first.row);
+            setOrder(header, +first.row.style.order - 1);
             generated.add(header);
             const group = { first: first.row, rows: run.map(r => r.row), button };
             groups.push(group);
@@ -181,7 +211,7 @@
             setGroup(group, !!query || expanded.get(first.row) === true);
           }
           expand.disabled = collapse.disabled = groups.length === 0;
-          if (!runs.length && query) list.append(empty);
+          if (!runs.length && query) { list.append(empty); setOrder(empty, records.length * 3 + 2); }
         } finally { if (!disposed) observe(); }
       }
       const observer = new MutationObserver(schedule);
@@ -198,6 +228,7 @@
         creationHeading.remove();
         empty.remove();
         for (const node of generated) node.remove();
+        for (const node of ordered) node.style.removeProperty('order');
         for (const [node, attrs] of [...owned]) for (const name of [...attrs.keys()]) restore(node, name);
       };
     }

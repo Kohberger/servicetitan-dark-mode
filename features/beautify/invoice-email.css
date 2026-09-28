@@ -1,0 +1,127 @@
+/* Original styling inspired by Tailwind Plus form layouts. Native controls stay
+   in their binding scopes; inline visibility, validation and disabled states win. */
+@media screen {
+html[data-st-beautify="on"] #container:has(form[data-st-email-ui]) {
+  width: auto !important; max-width: 1120px; padding: 32px !important; margin: 0 auto !important;
+}
+/* ServiceTitan fixes body height to the viewport. Match the root canvas too,
+   so overflow below that height keeps the same color under the dark filter. */
+html[data-st-beautify="on"]:has(form[data-st-email-ui]),
+html[data-st-beautify="on"] body:has(form[data-st-email-ui]) { background: #f8fafc !important; }
+html[data-st-beautify="on"] form[data-st-email-ui] {
+  --ste-ink: #172033; --ste-muted: #64748b; --ste-border: #e2e8f0; --ste-accent: #1d4ed8;
+  box-sizing: border-box; width: 100%; margin: 0 auto 32px;
+  color: var(--ste-ink); background: #fff; border: 1px solid var(--ste-border); border-radius: 14px;
+  box-shadow: 0 4px 18px #0f172a06;
+  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+html[data-st-beautify="on"] form[data-st-email-ui] > h3 { margin: 0; padding: 28px 32px 4px; font: 650 26px/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: -.025em; color: var(--ste-ink); }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-intro { margin: 0; padding: 0 32px 28px; color: var(--ste-muted); }
+html[data-st-beautify="on"] form[data-st-email-ui] > .control-group {
+  display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 12px 24px;
+  margin: 0; padding: 24px 32px; border-top: 1px solid var(--ste-border);
+}
+html[data-st-beautify="on"] form[data-st-email-ui] > .control-group::before,
+html[data-st-beautify="on"] form[data-st-email-ui] > .control-group::after { content: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] .control-label { float: none; width: auto; padding: 10px 0 0; text-align: left; font-weight: 600; color: var(--ste-ink); }
+html[data-st-beautify="on"] form[data-st-email-ui] .control-label .checkbox { padding: 0; margin: 0; font-weight: inherit; border: 0; background: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] .controls { grid-column: 2; min-width: 0; margin: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] .input-icon { position: relative; display: block; min-width: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] .input-icon::before { display: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] :is(input[type="text"], input[type="email"], select, textarea) {
+  box-sizing: border-box; width: 100% !important; max-width: 100%; height: auto; min-height: 42px;
+  padding: 10px 12px !important; margin: 0; background: #fff; color: var(--ste-ink);
+  border: 1px solid #cbd5e1; border-radius: 7px; box-shadow: 0 1px 2px #0f172a05;
+  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-shadow: none;
+}
+html[data-st-beautify="on"] form[data-st-email-ui] :is(input, select, textarea, button, a):focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+html[data-st-beautify="on"] form[data-st-email-ui] input::placeholder { color: #8290a5; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="from"] > .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .checkbox { display: inline-flex; align-items: center; gap: 9px; padding: 8px 10px; margin: 4px 6px 4px 0; border: 1px solid var(--ste-border); border-radius: 7px; color: #475569; cursor: pointer; vertical-align: top; overflow-wrap: anywhere; }
+html[data-st-beautify="on"] form[data-st-email-ui] .checkbox:has(input:checked) { color: #1e40af; background: #eff6ff; border-color: #93c5fd; }
+html[data-st-beautify="on"] form[data-st-email-ui] .checkbox input[type="checkbox"] { float: none; position: static; margin: 0; width: 16px; height: 16px; flex: 0 0 16px; accent-color: #2563eb; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="to"] { padding-bottom: 12px; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="new-recipient"] { border-top: 0; padding-top: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="new-recipient"] > .controls.input-icon:has(input[name="NewEmailAddress"]) { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+html[data-st-beautify="on"] form[data-st-email-ui] input[name="NewEmailAddress"] { flex: 1 1 220px; width: 0 !important; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-add { flex-shrink: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-status { grid-column: 2; margin: 0; color: var(--ste-muted); font-size: 12px; line-height: 1.5; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-status:empty { display: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-status[data-error] { color: #b42318; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chips:empty { display: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chip { display: inline-flex; gap: 8px; align-items: center; max-width: 100%; padding: 5px 8px 5px 12px; border: 1px solid #bfdbfe; border-radius: 20px; background: #eff6ff; color: #1e40af; font-size: 13px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chip > span { overflow-wrap: anywhere; min-width: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chip button { padding: 0; margin: 0; width: 24px; height: 24px; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; cursor: pointer; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chip button:hover { background: #dbeafe; }
+html[data-st-beautify="on"] form[data-st-email-ui] :is(.btn, .st-email-add) { box-sizing: border-box; min-height: 40px; padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #334155; font: 600 13px/20px ui-sans-serif, system-ui, sans-serif; text-shadow: none; box-shadow: 0 1px 2px #0f172a05; cursor: pointer; }
+html[data-st-beautify="on"] form[data-st-email-ui] :is(.btn, .st-email-add):hover { background: #f8fafc; }
+html[data-st-beautify="on"] form[data-st-email-ui] :is(button, input, select):disabled { opacity: .5; cursor: not-allowed; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="body"] > .control-label { grid-row: 1; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="body"] > .controls { grid-row: 1; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="body"] > .form-actions { grid-column: 2; grid-row: 2; margin: 0; padding: 0; border: 0; background: none; display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 16px; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="body"] > br { display: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] textarea[name="Body"] { min-height: 320px; line-height: 1.7; resize: vertical; }
+html[data-st-beautify="on"] form[data-st-email-ui] > .form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0; padding: 20px 32px; background: #f8fafc; border-top: 1px solid var(--ste-border); border-radius: 0 0 14px 14px; }
+html[data-st-beautify="on"] form[data-st-email-ui] button[type="submit"] { margin-left: auto; order: 2; min-width: 116px; background: var(--ste-accent); border-color: var(--ste-accent); color: #fff; }
+html[data-st-beautify="on"] form[data-st-email-ui] button[type="submit"]:hover { background: #1e40af; color: #fff; }
+html[data-st-beautify="on"] form[data-st-email-ui] button[type="submit"] > i { display: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] .btn-link { font-size: 13px; color: #64748b; padding: 8px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .validation-message { color: #b42318; font-size: 12px; margin-top: 6px; }
+html[data-st-beautify="on"] form[data-st-email-ui] input.input-validation-error { border-color: #dc2626; }
+/* Document rows keep the native labels, inputs, and Knockout bindings intact. */
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox {
+  display: flex; width: 100%; box-sizing: border-box; gap: 14px; min-height: 60px;
+  margin: 0; padding: 16px 12px; border: 0; border-radius: 0;
+  background: transparent; color: var(--ste-ink); font-weight: 500; line-height: 1.5;
+}
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox + .checkbox { border-top: 1px solid var(--ste-border); }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox::before {
+  content: ""; flex: 0 0 20px; width: 20px; height: 24px; background: #94a3b8;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 12h6M9 16h6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox > span { flex: 1; min-width: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox input[type="checkbox"] { order: 2; margin-left: auto; width: 18px; height: 18px; flex-basis: 18px; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox:hover { background: #f8fafc; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox:has(input:checked) { background: #eff6ff; color: #1e40af; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox:has(input:checked)::before { background: #2563eb; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox:has(input:focus-visible) { outline: 2px solid #2563eb; outline-offset: 2px; }
+/* One recipient picker, with fixed space for its chips. The native new-address
+   field and its "Save to customer/location record" options stay visible, so
+   saving an address to the record keeps working. */
+html[data-st-beautify="on"] form[data-st-email-picker-ready] [data-st-email-section="to"] .controls > label.checkbox { display: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-picker { position: relative; width: 100%; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-search { padding-right: 32px !important; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-dropdown {
+  position: absolute; z-index: 1100; top: calc(100% + 6px); left: 0; right: 0;
+  max-height: 264px; overflow-y: auto; padding: 6px; background: #fff;
+  border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 12px 28px #0f172a1a, 0 3px 6px #0f172a0a;
+}
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-dropdown[hidden] { display: none; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 44px; box-sizing: border-box; padding: 10px 12px; border-radius: 7px;
+  color: #334155; cursor: pointer; overflow-wrap: anywhere;
+}
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-option:is(:hover,[data-active]) { background: #f1f5f9; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-option[aria-selected="true"] { color: #1d4ed8; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-option-hint { flex-shrink: 0; color: #64748b; font-size: 12px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-option-empty { margin: 0; padding: 14px 12px; color: #64748b; font-size: 13px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-selection { margin-top: 14px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chips,
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-chips:empty { display: flex; height: 72px; overflow-y: auto; align-content: flex-start; align-items: flex-start; box-sizing: border-box; margin: 0 0 8px; padding: 3px; }
+@media (max-width: 900px) {
+html[data-st-beautify="on"] #container:has(form[data-st-email-ui]) { padding: 16px !important; }
+html[data-st-beautify="on"] form[data-st-email-ui] > .control-group { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 8px; }
+html[data-st-beautify="on"] form[data-st-email-ui] :is(.controls, .st-email-status) { grid-column: 1; }
+html[data-st-beautify="on"] form[data-st-email-ui] .control-label { padding: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="new-recipient"] { padding-top: 0; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="body"] > .control-label { grid-row: 1; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="body"] > .controls { grid-row: 2; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="body"] > .form-actions { grid-column: 1; grid-row: 3; }
+html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="from"] > .controls { grid-template-columns: minmax(0, 1fr); }
+html[data-st-beautify="on"] form[data-st-email-ui] > h3 { padding: 24px 20px 4px; }
+html[data-st-beautify="on"] form[data-st-email-ui] .st-email-intro { padding: 0 20px 24px; }
+html[data-st-beautify="on"] form[data-st-email-ui] > .form-actions { padding: 20px; }
+}
+}

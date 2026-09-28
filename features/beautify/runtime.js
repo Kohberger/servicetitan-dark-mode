@@ -12,7 +12,10 @@
     timer = undefined;
     for (const state of modules.values()) {
       try {
-        const root = enabled() && state.module.matches(location) ? state.module.findRoot() : null;
+        // Some routes change before their outgoing view is removed. Keep an
+        // opted-in view styled through that gap, but never through disable/print.
+        const root = !enabled() ? null : state.module.matches(location) ? state.module.findRoot()
+          : state.module.retainUntilRemoved && state.root?.isConnected ? state.root : null;
         if (root === state.root) continue;
         const dispose = state.dispose;
         state.dispose = null;

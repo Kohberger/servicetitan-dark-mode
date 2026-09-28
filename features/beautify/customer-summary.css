@@ -1,0 +1,71 @@
+/* Tailwind Plus-inspired stat hierarchy, applied to native customer cards only.
+   No values, controls, tooltips, or React-owned nodes are copied or moved. */
+@media screen {
+html[data-st-beautify="on"] #customer-summary { container: customer-summary / inline-size; min-width: 0; }
+html[data-st-beautify="on"] #customer-summary [class*="customer-summary-container__"] { overflow: visible; min-width: 0; width: 100%; }
+html[data-st-beautify="on"] #customer-summary [class*="customer-summary-container__"] > .Stack__InternalWrapper {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; margin: 0;
+}
+html[data-st-beautify="on"] #customer-summary .Card[class*="summary-card__"] {
+  min-width: 0 !important; width: auto !important; max-width: 100%; margin: 0 !important;
+  border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;
+  box-shadow: 0 1px 3px #0f172a08; display: flex; flex-direction: column;
+}
+html[data-st-beautify="on"] #customer-summary .CardSection { padding: 20px 24px; min-width: 0; border: 0; }
+html[data-st-beautify="on"] #customer-summary .CardSection:first-child { flex: 0 0 auto; }
+html[data-st-beautify="on"] #customer-summary .CardSection + .CardSection { flex: 1; border-top: 1px solid #eef2f6; background: #f8fafc; border-radius: 0 0 12px 12px; }
+html[data-st-beautify="on"] #customer-summary .Stack { min-width: 0; }
+html[data-st-beautify="on"] #customer-summary .Stack__InternalWrapper { min-width: 0; }
+html[data-st-beautify="on"] #customer-summary .CardSection:first-child > .Stack > .Stack__InternalWrapper {
+  flex-direction: column; align-items: flex-start; gap: 8px; margin: 0;
+}
+html[data-st-beautify="on"] #customer-summary .Headline { margin: 0 !important; width: auto; font-size: 30px; font-weight: 650; line-height: 1.2; letter-spacing: -.025em; color: #172033; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+html[data-st-beautify="on"] #customer-summary .Headline--subdued { font-size: 13px; font-weight: 500; line-height: 1.5; letter-spacing: 0; color: #64748b; }
+html[data-st-beautify="on"] #customer-summary .BodyText { font-size: 13px; line-height: 1.5; margin: 0; color: #334155; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+html[data-st-beautify="on"] #customer-summary .BodyText--subdued { color: #64748b; }
+html[data-st-beautify="on"] #customer-summary .BodyText--xsmall { font-size: 12px; }
+html[data-st-beautify="on"] #customer-summary .t-truncate { white-space: normal; overflow: visible; text-overflow: clip; max-width: 100%; }
+html[data-st-beautify="on"] #customer-summary .CardSection + .CardSection > .Stack > .Stack__InternalWrapper { gap: 12px; flex-wrap: wrap; margin: 0; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) { grid-column: 1 / -1; order: 1; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection:first-child > .Stack > .Stack__InternalWrapper { flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection:first-child > .Stack > .Stack__InternalWrapper > .Stack:first-child > .Stack__InternalWrapper { flex-direction: column; align-items: flex-start; gap: 8px; margin: 0; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper > :first-child,
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper > :last-child { grid-column: 1 / -1; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) .CardSection + .CardSection .BodyText:not(.BodyText--subdued) { font-size: 16px; font-weight: 500; }
+html[data-st-beautify="on"] #customer-summary [data-mfe-name="servicetitan-acc-customer-financials"] { grid-column: 1 / -1; order: 2; }
+html[data-st-beautify="on"] #customer-summary .Card:has(> .CardSection:first-child > .Headline) > .CardSection:first-child { flex: 0; padding-bottom: 8px; }
+html[data-st-beautify="on"] #customer-summary .Card:has(> .CardSection:first-child > .Headline) > .CardSection + .CardSection { padding-top: 0; border-top: 0; background: transparent; align-items: flex-start; }
+html[data-st-beautify="on"] #customer-summary > .Stack__InternalWrapper > .BodyText { margin-bottom: 16px; font-weight: 600; letter-spacing: .025em; }
+/* Native Stack spacing leaves an extra trailing margin beside this group. */
+html[data-st-beautify="on"] #customer-summary .Stack:has(> .Stack__InternalWrapper > [data-tracking-id="crm-customer-lifetime-revenue-button"]) { margin: 0 !important; }
+/* Align both lines to the same right edge; keep the native icon inline. */
+html[data-st-beautify="on"] #customer-summary .Stack__InternalWrapper:has(> [data-tracking-id="crm-customer-lifetime-revenue-button"]) { padding: 0; align-items: flex-end; }
+html[data-st-beautify="on"] #customer-summary [data-tracking-id="crm-customer-lifetime-revenue-button"] { padding-inline: 0; margin-inline: 0; align-self: flex-end; text-align: right; }
+html[data-st-beautify="on"] #customer-summary [data-tracking-id="crm-customer-lifetime-revenue-button"] .Button__content { justify-content: flex-end; }
+html[data-st-beautify="on"] #customer-summary [data-tracking-id="crm-customer-lifetime-revenue-button"] .Button__icon { position: static; width: 16px; margin: 0 8px 0 0; }
+html[data-st-beautify="on"] #customer-summary [data-tracking-id="crm-customer-lifetime-revenue-button"] + .BodyText { align-self: flex-end; text-align: right; }
+/* Respond to each stat card's available space instead of stacking every footer
+   when the overall summary crosses an unrelated breakpoint. */
+html[data-st-beautify="on"] #customer-summary .Card:not(:has([data-tracking-id="customer-summary-pay-now-button"])) { container: customer-stat / inline-size; }
+html[data-st-beautify="on"] #customer-summary .Card:has(> .CardSection:first-child > .Headline) { align-self: stretch; }
+html[data-st-beautify="on"] #customer-summary .CardSection + .CardSection > .Stack > .Stack__InternalWrapper > .Stack { margin: 0; }
+html[data-st-beautify="on"] #customer-summary .Card:not(:has([data-tracking-id="customer-summary-pay-now-button"])) > .CardSection:first-child:has(> .Stack) { box-sizing: border-box; min-height: 108px; }
+html[data-st-beautify="on"] #customer-summary .Card:not(:has([data-tracking-id="customer-summary-pay-now-button"])) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; }
+html[data-st-beautify="on"] #customer-summary .Card:not(:has([data-tracking-id="customer-summary-pay-now-button"])) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper > :last-child { justify-self: end; text-align: right; }
+/* Replace native Stack spacing with the aging grid's gap for every item,
+   including Payment Terms, whose wrapper is not a Stack. */
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper > * { margin: 0; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper > .Stack > .Stack__InternalWrapper { margin: 0; }
+@container customer-stat (max-width: 280px) {
+html[data-st-beautify="on"] #customer-summary .CardSection { padding: 16px; }
+}
+@container customer-stat (max-width: 230px) {
+html[data-st-beautify="on"] #customer-summary .Card:not(:has([data-tracking-id="customer-summary-pay-now-button"])) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+@container customer-summary (max-width: 700px) {
+html[data-st-beautify="on"] #customer-summary [class*="customer-summary-container__"] > .Stack__InternalWrapper { grid-template-columns: minmax(0, 1fr); }
+html[data-st-beautify="on"] #customer-summary .CardSection { padding: 18px; }
+html[data-st-beautify="on"] #customer-summary .Card:has([data-tracking-id="customer-summary-pay-now-button"]) > .CardSection + .CardSection > .Stack > .Stack__InternalWrapper { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+}

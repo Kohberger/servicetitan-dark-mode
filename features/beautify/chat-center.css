@@ -1,0 +1,98 @@
+/* Chat Center thread list as cards. Pure CSS over the native Knockout rows:
+   state comes only from cht-contact_unread / _replied / _unknown, and every
+   label is a pseudo-element, so no bound nodes are touched. Light colours pass
+   through the dark-mode page inversion like the rest of Beautify. */
+@media screen {
+html[data-st-beautify="on"] .cht-contacts {background:#f1f3f6;padding:10px;box-sizing:border-box}
+html[data-st-beautify="on"] .cht-contacts .cht-contact {border:1px solid #e3e6eb;border-radius:10px;margin-bottom:8px;padding:12px 14px;background:#fff;opacity:1}
+html[data-st-beautify="on"] .cht-contacts .cht-contact-action {top:10px;right:10px;display:flex;align-items:center;gap:6px}
+html[data-st-beautify="on"] .cht-contacts .cht-contact-reply-icon {display:none!important}
+html[data-st-beautify="on"] .cht-contacts .cht-contact-action::before {font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:0 8px;border-radius:999px;line-height:18px;white-space:nowrap}
+
+html[data-st-beautify="on"] .cht-contacts .cht-contact_unread {border:1px solid #93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.14);background:#fff;opacity:1}
+html[data-st-beautify="on"] .cht-contacts .cht-contact_unread .cht-contact-name {font-weight:800}
+html[data-st-beautify="on"] .cht-contacts .cht-contact_unread .cht-contact-action::before {content:"New";background:#2563eb;color:#fff}
+
+/* data-st-chat-automated (chat-automated.js): the last message was an automated
+   reminder or dispatch notification, which ServiceTitan doesn't count as a reply.
+   A replied thread that was marked unread again shows as New: unread wins. */
+html[data-st-beautify="on"] .cht-contacts .cht-contact_replied:not(.cht-contact_unread),
+html[data-st-beautify="on"] .cht-contacts .cht-contact[data-st-chat-automated]:not(.cht-contact_unread) {background:#fafbfc;opacity:1}
+html[data-st-beautify="on"] .cht-contacts .cht-contact_replied:not(.cht-contact_unread) .cht-contact-message,
+html[data-st-beautify="on"] .cht-contacts .cht-contact[data-st-chat-automated]:not(.cht-contact_unread) .cht-contact-message {color:#6b7280}
+html[data-st-beautify="on"] .cht-contacts .cht-contact_replied:not(.cht-contact_unread) .cht-contact-action::before,
+html[data-st-beautify="on"] .cht-contacts .cht-contact[data-st-chat-automated]:not(.cht-contact_unread) .cht-contact-action::before {content:"\2713  Replied";background:#ecfdf5;color:#047857;box-shadow:inset 0 0 0 1px rgba(4,120,87,.2)}
+
+/* Unknown numbers get a dashed outline, except when unread: then the unread outline wins. */
+html[data-st-beautify="on"] .cht-contacts .cht-contact_unknown:not(.cht-contact_unread) {border-style:dashed;border-color:#b8bec8}
+
+html[data-st-beautify="on"] .cht-contacts .cht-contact:hover {box-shadow:0 4px 14px rgba(16,24,40,.10);border-color:#c9ced6}
+html[data-st-beautify="on"] .cht-contacts .cht-contact_unread:hover {border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.14),0 4px 14px rgba(16,24,40,.10)}
+html[data-st-beautify="on"] .cht-contacts .cht-contact:hover .cht-contact-name,
+html[data-st-beautify="on"] .cht-contacts .cht-contact:hover .cht-contact-number {color:#1d4ed8}
+
+html[data-st-beautify="on"] .cht-contacts .cht-contact.cht-contact_loader {border:0;background:none;box-shadow:none}
+
+/* Bulk actions (chat-bulk-actions.js): a checkbox on each card, a floating bar
+   for the selection, and a confirmation dialog for close and block. */
+/* Reserve the checkbox column and draw an empty box from the first paint on the
+   Open tab, so cards don't shift when the script adds the real checkbox.
+   body[data-st-chat-readonly] marks users without Chat Center write access. */
+html[data-st-beautify="on"] body:not([data-st-chat-readonly]) .cht-state-tab-bar:has(> .cht-state-tab:first-child.active) ~ .cht-contacts .cht-contact:not(.cht-contact_loader),
+html[data-st-beautify="on"] .cht-contacts .cht-contact:has(> [data-st-chat-check]) {padding-left:46px}
+html[data-st-beautify="on"] body:not([data-st-chat-readonly]) .cht-state-tab-bar:has(> .cht-state-tab:first-child.active) ~ .cht-contacts .cht-contact:not(.cht-contact_loader):not(:has(> [data-st-chat-check]))::before {content:"";position:absolute;left:14px;top:14px;width:20px;height:20px;box-sizing:border-box;border:1.5px solid #c3c8d0;border-radius:5px;background:#fff}
+html[data-st-beautify="on"] .cht-contacts [data-st-chat-check] {position:absolute;left:14px;top:14px;width:20px;height:20px;box-sizing:border-box;border:1.5px solid #c3c8d0;border-radius:5px;background:#fff;transition:border-color .12s}
+html[data-st-beautify="on"] .cht-contacts .cht-contact:hover > [data-st-chat-check] {border-color:#6b7280}
+html[data-st-beautify="on"] .cht-contacts [data-st-chat-check] input {position:absolute;top:-6px;left:-6px;width:32px;height:32px;margin:0;opacity:0;cursor:pointer}
+html[data-st-beautify="on"] .cht-contacts [data-st-chat-check]:focus-within {outline:2px solid #2563eb;outline-offset:2px}
+html[data-st-beautify="on"] .cht-contacts [data-st-chat-check]:has(input:checked) {background:#2563eb;border-color:#2563eb}
+html[data-st-beautify="on"] .cht-contacts [data-st-chat-check]:has(input:checked)::after {content:"";position:absolute;top:1px;left:1px;right:1px;bottom:1px;background:#fff;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/14px no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center/14px no-repeat;pointer-events:none}
+html[data-st-beautify="on"] .cht-contacts .cht-contact[data-st-chat-selected],
+html[data-st-beautify="on"] .cht-contacts .cht-contact[data-st-chat-selected]:hover {border:1px solid #2563eb;background:#f5f9ff;box-shadow:0 0 0 1px #2563eb}
+html[data-st-beautify="on"] .cht-contacts[data-st-chat-selecting] {padding-bottom:132px}
+
+html[data-st-beautify="on"] [data-st-chat-bulk] {position:absolute;left:12px;right:12px;bottom:12px;z-index:5;box-sizing:border-box;background:#fff;border:1px solid #d5d9e0;border-radius:12px;box-shadow:0 12px 30px rgba(16,24,40,.18);padding:12px;color:#141414;font-size:14px;line-height:1.4}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-top {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-count {font-weight:800;font-size:15px}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-link {appearance:none;margin:0;border:0;background:none;padding:4px 8px;border-radius:6px;font:inherit;font-weight:700;color:#4b5563;cursor:pointer}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-link:hover {background:#f1f3f6}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-acts {display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act {appearance:none;margin:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 12px;box-sizing:border-box;border:1px solid #d5d9e0;border-radius:8px;background:#fff;color:#1f2937;font:inherit;font-weight:700;white-space:nowrap;cursor:pointer;min-width:0}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act[hidden] {display:none}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act svg {width:18px;height:18px;flex:none;color:#4b5563}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act:hover {background:#f3f5f8;border-color:#c3c8d0}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act:disabled {opacity:.45;cursor:not-allowed;background:#fff}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act.stcb-danger {color:#b91c1c;border-color:#f5c2c2}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act.stcb-danger svg {color:#dc2626}
+html[data-st-beautify="on"] [data-st-chat-bulk] .stcb-act.stcb-danger:hover {background:#fef2f2}
+html[data-st-beautify="on"] [data-st-chat-bulk] :is(button):focus-visible,
+html[data-st-beautify="on"] [data-st-chat-dialog] :is(button):focus-visible {outline:2px solid #2563eb;outline-offset:2px}
+
+html[data-st-beautify="on"] [data-st-chat-dialog] {position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483000;background:rgba(17,24,39,.38);display:flex;align-items:center;justify-content:center;padding:18px;font-size:14px;line-height:1.5;color:#374151}
+/* Dark mode inverts the page, so a dark scrim turns into a light wash. A light
+   scrim ends up darkening the page instead, like it does in light mode. */
+html[data-st-beautify="on"] [data-st-chat-dialog]:where([data-st-dark="on"] *) {background:rgba(248,250,252,.55)}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-modal {background:#fff;border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.25);width:100%;max-width:380px}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-head {display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eceef2;font-weight:800;font-size:16px;color:#141414}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-head button {appearance:none;margin:0;border:0;background:none;font-size:22px;line-height:1;color:#6b7280;cursor:pointer;padding:0 4px}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-body {padding:16px 18px}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-body p {margin:0}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-body ul {margin:10px 0 0;padding-left:18px;color:#6b7280;font-size:13px}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-body .stcb-note {margin-top:10px;font-size:13px;color:#92400e}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-foot {display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid #eceef2}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-foot button {appearance:none;margin:0;font:inherit;font-weight:700;border-radius:4px;padding:7px 14px;cursor:pointer;border:1px solid #d1d5db;background:#fff;color:#374151}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-foot .stcb-primary {background:#2270ee;border-color:#2270ee;color:#fff}
+html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-foot .stcb-primary.stcb-danger {background:#dc2626;border-color:#dc2626}
+
+/* Reply box (chat detail): a real multi-line box with the Send row underneath.
+   ServiceTitan's auto-grow sets an inline height up to 170px, so the default
+   size is a min-height (four lines) rather than a height. */
+html[data-st-beautify="on"] .cht-conversation-control .cht-response-container {flex-wrap:wrap;align-items:center;gap:8px 12px}
+html[data-st-beautify="on"] .cht-conversation-control .cht-response-input {order:0;flex:1 1 100%;width:100%;min-height:104px;box-sizing:border-box;padding:8px 10px;border:1px solid #cfd4dc;border-radius:8px;background:#fff;font-size:15px;line-height:22px}
+html[data-st-beautify="on"] .cht-conversation-control .cht-response-input:focus {outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+html[data-st-beautify="on"] .cht-conversation-control .cht-response-input.cht-conversation-input_warning {background:#f9f5e7;border-color:#f8ba00}
+html[data-st-beautify="on"] .cht-conversation-control .cht-response-container button.ui.button {order:2;margin-left:auto}
+html[data-st-beautify="on"] .cht-conversation-control [data-st-chat-hint] {order:1;display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#6b7280;white-space:nowrap}
+html[data-st-beautify="on"] .cht-conversation-control [data-st-chat-hint] kbd {font:inherit;font-weight:700;font-size:11px;line-height:1;color:#374151;background:#fff;border:1px solid #d5d9e0;border-bottom-width:2px;border-radius:4px;padding:3px 6px}
+html[data-st-beautify="on"] .cht-conversation-control .cht-response-input:disabled ~ [data-st-chat-hint] {display:none}
+}

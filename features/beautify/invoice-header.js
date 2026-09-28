@@ -39,14 +39,14 @@
     return { label, key: label.toLowerCase(), value, link, href };
   }
 
-  const mountHeader = root => {
+  const mountControls = root => {
     const titleRow = root.querySelector(':scope > div > .row.m-b-1');
     const slot = titleRow?.querySelector(':scope > .span7');
     const panel = slot?.querySelector(':scope > .dropdown');
     const primary = root.querySelector(':scope > div > .pull-right.btn-group');
-    if (!slot || !panel || !primary) return () => {};
+    if (!slot || !panel || !primary) return null;
     // Clean abandoned generated markup if a host framework cloned this subtree.
-    root.querySelectorAll('[data-st-invoice-generated]').forEach(el => el.remove());
+    root.querySelectorAll('.st-invoice-actions-toggle,.st-invoice-secondary-links,.st-invoice-details-panel').forEach(el => el.remove());
     const abort = new AbortController();
     const options = { signal: abort.signal };
     const proxies = new Map();
@@ -80,6 +80,7 @@
     // Values are copied as text; links
     // are re-created (http/https only) or delegated to the native link.
     const meta = root.querySelector(':scope > div > .attributes');
+    const detailsView = root.querySelector('.invoice-details-view');
     const details = document.createElement('section');
     details.className = 'st-invoice-details-panel';
     details.setAttribute('data-st-invoice-generated', '');
@@ -150,10 +151,10 @@
         detailsList.replaceChildren(...fields.map(renderItem));
       }
       if (!fields.length) details.remove();
-      else if (!details.isConnected) {
-        // Main column when present; otherwise directly under the header fields.
-        const column = root.querySelector(':scope > div > .row:last-child > .span9');
-        if (column) column.prepend(details); else meta.after(details);
+      else if (detailsView && details.parentElement !== detailsView) {
+        // Inherit ServiceTitan's `visible: !Editing()` behavior. The main
+        // column also hosts the edit form and stays visible while editing.
+        detailsView.prepend(details);
       }
     }
 
@@ -251,13 +252,43 @@
     observer.observe(primary, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'style', 'disabled', 'aria-disabled', 'hidden'] });
     if (meta) observer.observe(meta, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style', 'hidden', 'href'] });
     update();
-    return () => {
+    const dispose = () => {
       disposed = true; clearTimeout(timer); observer.disconnect(); abort.abort();
       toggle.remove(); links.remove(); details.remove();
       if (!originalId && panel.id === panelId) panel.removeAttribute('id');
       for (const el of [root, panel, ...primary.children, ...root.querySelectorAll('[data-st-invoice-meta-hidden]')]) {
         for (const attr of ['data-st-invoice-header','data-st-invoice-actions-open','data-st-invoice-actions-panel','data-st-invoice-primary','data-st-invoice-secondary','data-st-invoice-meta-hidden']) el.removeAttribute(attr);
       }
+    };
+    dispose.isCurrent = () =>
+      root.querySelector(':scope > div > .row.m-b-1 > .span7') === slot &&
+      slot.querySelector(':scope > .dropdown') === panel &&
+      root.querySelector(':scope > div > .pull-right.btn-group') === primary &&
+      root.querySelector(':scope > div > .attributes') === meta &&
+      root.querySelector('.invoice-details-view') === detailsView &&
+      toggle.parentElement === slot && links.parentElement === panel;
+    return dispose;
+  };
+  // Knockout can rebuild the header while keeping the invoice root and URL.
+  // Observe that stable root, and rebind only when our actual controls change.
+  const mountHeader = root => {
+    let dispose, timer, disposed = false;
+    function reconcile() {
+      timer = undefined;
+      if (disposed || dispose?.isCurrent()) return;
+      dispose?.();
+      dispose = mountControls(root);
+    }
+    const observer = new MutationObserver(() => {
+      if (!disposed && timer === undefined) timer = setTimeout(reconcile, 50);
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    reconcile();
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+      observer.disconnect();
+      dispose?.();
     };
   };
   mountHeader.tone = tone; // exposed for tests/beautify.test.js
