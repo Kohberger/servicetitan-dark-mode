@@ -69,6 +69,9 @@ html[data-st-beautify="on"] [data-st-chat-bulk] :is(button):focus-visible,
 html[data-st-beautify="on"] [data-st-chat-dialog] :is(button):focus-visible {outline:2px solid #2563eb;outline-offset:2px}
 
 html[data-st-beautify="on"] [data-st-chat-dialog] {position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483000;background:rgba(17,24,39,.38);display:flex;align-items:center;justify-content:center;padding:18px;font-size:14px;line-height:1.5;color:#374151}
+/* Dark mode inverts the page, so a dark scrim turns into a light wash. A light
+   scrim ends up darkening the page instead, like it does in light mode. */
+html[data-st-beautify="on"] [data-st-chat-dialog]:where([data-st-dark="on"] *) {background:rgba(248,250,252,.55)}
 html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-modal {background:#fff;border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.25);width:100%;max-width:380px}
 html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-head {display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eceef2;font-weight:800;font-size:16px;color:#141414}
 html[data-st-beautify="on"] [data-st-chat-dialog] .stcb-head button {appearance:none;margin:0;border:0;background:none;font-size:22px;line-height:1;color:#6b7280;cursor:pointer;padding:0 4px}
