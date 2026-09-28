@@ -73,7 +73,12 @@
       rows[6].querySelector('.body').textContent += ' Updated'; await settle();
       result.push(assert(list.querySelectorAll('.st-audit-group').length === 2, 'Native content update rebuilds groups without duplicates'));
       location.hash = '#/Invoice/123'; await settle();
-      result.push(assert(!fixture.hasAttribute('data-st-audit-ui') && !list.querySelector('.st-audit-group') && !list.querySelector('[data-st-audit-folded]') && !note.hasAttribute('aria-label'), 'Route cleanup restores rows and owned accessibility attributes'));
+      // The outgoing job view keeps its styles until ServiceTitan removes it.
+      result.push(assert(fixture.hasAttribute('data-st-audit-ui') && !!list.querySelector('.st-audit-group'), 'Outgoing job view stays styled until it is removed'));
+      const listParent = list.parentNode, listNext = list.nextSibling;
+      list.remove(); await settle();
+      result.push(assert(!fixture.hasAttribute('data-st-audit-ui') && !list.querySelector('.st-audit-group') && !list.querySelector('[data-st-audit-folded]') && ![...list.children].some(li => li.style.order) && !note.hasAttribute('aria-label'), 'Route cleanup restores rows and owned accessibility attributes'));
+      listParent.insertBefore(list, listNext);
       location.hash = '#/Job/Index/123'; await settle();
       const replacement = document.createElement('ul'); replacement.className = 'unstyled';
       // Simulate application replacing the root without copying extension nodes.
