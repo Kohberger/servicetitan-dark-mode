@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ServiceTitan Dark Mode By BCN",
-  "description": "Dynamic dark mode for ServiceTitan, plus an optional cleaner look for invoices, batching and job history. Made By Blue Collar Nerd",
-  "version": "1.4",
+  "description": "Dynamic dark mode for ServiceTitan, plus an optional cleaner look for invoices, jobs, customers and chat. Made By Blue Collar Nerd",
+  "version": "1.5",
   "permissions": [
     "storage",
     "scripting",
