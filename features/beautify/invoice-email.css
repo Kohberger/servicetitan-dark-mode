@@ -86,10 +86,10 @@ html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms
 html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox:has(input:checked) { background: #eff6ff; color: #1e40af; }
 html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox:has(input:checked)::before { background: #2563eb; }
 html[data-st-beautify="on"] form[data-st-email-ui] [data-st-email-section="forms"] .checkbox:has(input:focus-visible) { outline: 2px solid #2563eb; outline-offset: 2px; }
-/* One recipient picker, with fixed space for its chips. */
+/* One recipient picker, with fixed space for its chips. The native new-address
+   field and its "Save to customer/location record" options stay visible, so
+   saving an address to the record keeps working. */
 html[data-st-beautify="on"] form[data-st-email-picker-ready] [data-st-email-section="to"] .controls > label.checkbox { display: none; }
-html[data-st-beautify="on"] form[data-st-email-picker-ready]:not([data-st-email-native-open]) [data-st-email-section="new-recipient"] { display: none; }
-html[data-st-beautify="on"] form[data-st-email-picker-ready] .save-email-address { display: none; }
 html[data-st-beautify="on"] form[data-st-email-ui] .st-email-picker { position: relative; width: 100%; }
 html[data-st-beautify="on"] form[data-st-email-ui] .st-email-search { padding-right: 32px !important; }
 html[data-st-beautify="on"] form[data-st-email-ui] .st-email-dropdown {

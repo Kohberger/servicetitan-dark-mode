@@ -30,7 +30,13 @@
         const name = group.querySelector(':scope > .control-label')?.textContent.trim();
         if (labels[name]) annotate(group, labels[name]);
       }
-      annotate(input.closest('.control-group'), 'new-recipient');
+      const newRecipient = input.closest('.control-group');
+      annotate(newRecipient, 'new-recipient');
+      // The native row has no label of its own. Name it so it reads as the place
+      // to type an address you also want to save to the customer or location.
+      if (newRecipient && !newRecipient.querySelector(':scope > .control-label')) {
+        newRecipient.prepend(make('label', 'control-label st-email-new-label', 'New address'));
+      }
       const recipientGroup = form.querySelector('[data-st-email-section="to"]');
       const controls = recipientGroup?.querySelector('.controls');
       const picker = make('div', 'st-email-picker');

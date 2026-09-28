@@ -13,7 +13,8 @@ document.querySelector('#tests').onclick = async () => {
   const body = form.elements.Body.value;
   const nativeControls = [...form.querySelectorAll('input,select,textarea,button')].filter(el => !el.closest('[data-st-email-generated]'));
   check('Picker mounts without selecting anyone', !!search() && model.SelectedEmails().length === 0);
-  check('Native checkboxes and legacy input are hidden', !form.querySelector('input[value="customer@example.com"]').getClientRects().length && !native.getClientRects().length);
+  check('Native checkboxes are replaced by the picker', !form.querySelector('input[value="customer@example.com"]').getClientRects().length);
+  check('New address field and save-to-record options stay visible', !!native.getClientRects().length && !!form.querySelector('.save-email-address').getClientRects().length && form.querySelector('.st-email-new-label')?.textContent === 'New address');
   form.requestSubmit();
   check('Empty recipient selection blocks Send', sent.length === 0);
   search().focus();
@@ -58,7 +59,7 @@ document.querySelector('#tests').onclick = async () => {
   enter('other@example.com'); key('Enter'); await wait();
   check('Picker preserves native draft and contact association', model.NewEmailAddress() === 'save@example.com' && model.SelectedContactId() === 123 && model.SaveCustomerEmailAddress() && model.SelectedEmails().includes('other@example.com'));
   form.requestSubmit();
-  check('Contact-saving UI stays hidden even with a native draft', !form.querySelector('.save-email-address').getClientRects().length);
+  check('Save-to-record options stay visible with a native draft', !!form.querySelector('.save-email-address').getClientRects().length && model.SaveCustomerEmailAddress());
   check('Native pending address is still submitted', sent.at(-1).draft === 'save@example.com');
   native.value = ''; native.dispatchEvent(new Event('input', { bubbles: true }));
   form.elements.SaveCustomerEmailAddress.click(); model.SelectedContactId(null);
