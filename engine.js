@@ -841,6 +841,26 @@ html[data-st-dark="on"] :is([data-anv="card"], [popover], :popover-open, [data-p
       border-color: #3a3a3a !important;
       color-scheme: dark !important;
     }
+    /* v1.5.1: the job popover while it loads. For the first ~250ms after a
+       hover it holds Anvil skeleton bars instead of a popover-container, so
+       the rule above didn't match yet and the top-layer popover showed light
+       gray (#F7F7F7 with #EEE bars) before switching to dark. Match the
+       popover itself by its stable data-cy so it's dark from the first frame,
+       and darken the skeleton bars. Its arrow path kept a light fill even
+       once loaded (a white notch beside the dark popover); fill it too. */
+    :host-context(html[data-st-dark="on"]) [popover][data-cy="dc-job-popover"] {
+      background-color: #2d2d2d !important;
+      border-color: #3a3a3a !important;
+      color: #e0e0e0 !important;
+      color-scheme: dark !important;
+    }
+    :host-context(html[data-st-dark="on"]) [popover][data-cy="dc-job-popover"] [data-anv^="skeleton"]:not([data-anv="skeleton-text"]),
+    :host-context(html[data-st-dark="on"]) [popover][data-cy="dc-job-popover"] [data-anv="skeleton-text"] > * {
+      background-color: #3a3a3a !important;
+    }
+    :host-context(html[data-st-dark="on"]) [popover][data-cy="dc-job-popover"] [class*="_arrow_"] path {
+      fill: #2d2d2d !important;
+    }
     /* Inner container — explicit dark mode, NO filter (preserves emoji colors). */
     :host-context(html[data-st-dark="on"]) [class*="popover-container"] {
       background-color: #2d2d2d !important;
